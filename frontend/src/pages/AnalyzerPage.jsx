@@ -70,7 +70,9 @@ export default function AnalyzerPage() {
     setActiveFindingId(null);
 
     try {
-      const data = await analyzeImage(file, { onUploadComplete: () => setUploaded(true) });
+      const data = await analyzeImage(file, {
+        onUploadComplete: () => setUploaded(true),
+      });
       setResult(data);
       setStatus("done");
     } catch (err) {
@@ -90,22 +92,20 @@ export default function AnalyzerPage() {
   const showResults = status === "done" && result;
 
   return (
-    <main className={`analyzer-page ${showResults ? "analyzer-page--results" : ""}`}>
+    <main
+      className={`analyzer-page ${showResults ? "analyzer-page--results" : ""}`}
+    >
       <header className="analyzer-page__header">
         <h1>DesignLint</h1>
-        <div className="analyzer-page__header-status">
-          <p
-            className={`backend-status backend-status--${backendStatus}`}
-            role="status"
+        {backendStatus === "offline" && (
+          <button
+            type="button"
+            className="retry-connection"
+            onClick={handleRetryConnection}
           >
-            Backend: {backendStatus}
-          </p>
-          {backendStatus === "offline" && (
-            <button type="button" className="retry-connection" onClick={handleRetryConnection}>
-              Retry connection
-            </button>
-          )}
-        </div>
+            Retry connection
+          </button>
+        )}
       </header>
 
       {!showResults && (
@@ -128,15 +128,22 @@ export default function AnalyzerPage() {
           <button
             type="button"
             className="analyze-button"
-            disabled={!file || backendStatus !== "online" || status === "analyzing"}
+            disabled={
+              !file || backendStatus !== "online" || status === "analyzing"
+            }
             onClick={handleAnalyze}
           >
-            {status === "analyzing" ? "Analyzing…" : status === "error" ? "Try again" : "Analyze Design"}
+            {status === "analyzing"
+              ? "Analyzing…"
+              : status === "error"
+                ? "Try again"
+                : "Analyze Design"}
           </button>
 
           {file && backendStatus !== "online" && (
             <p className="analyzer-page__hint">
-              The backend isn't reachable yet, so analysis can't run. Start it, then press “Retry connection”.
+              The backend isn't reachable yet, so analysis can't run. Start it,
+              then press “Retry connection”.
             </p>
           )}
 
@@ -144,10 +151,13 @@ export default function AnalyzerPage() {
 
           {status === "error" && (
             <div className="analyzer-page__error" role="alert">
-              <p className="analyzer-page__error-title">The analysis didn't complete</p>
+              <p className="analyzer-page__error-title">
+                The analysis didn't complete
+              </p>
               <p>{error}</p>
               <p className="analyzer-page__error-hint">
-                Your screenshot is still selected — press “Try again”, or remove it to choose a different one.
+                Your screenshot is still selected — press “Try again”, or remove
+                it to choose a different one.
               </p>
             </div>
           )}
@@ -155,7 +165,10 @@ export default function AnalyzerPage() {
       )}
 
       {showResults && (
-        <section className="analyzer-page__results-layout" aria-label="Audit results">
+        <section
+          className="analyzer-page__results-layout"
+          aria-label="Audit results"
+        >
           <ScreenshotViewer
             previewUrl={previewUrl}
             image={result.image}
@@ -173,7 +186,11 @@ export default function AnalyzerPage() {
       )}
 
       {showResults && (
-        <button type="button" className="analyzer-page__new-analysis" onClick={handleRemove}>
+        <button
+          type="button"
+          className="analyzer-page__new-analysis"
+          onClick={handleRemove}
+        >
           Analyze another screenshot
         </button>
       )}

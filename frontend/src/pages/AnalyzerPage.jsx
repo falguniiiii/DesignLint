@@ -109,10 +109,23 @@ export default function AnalyzerPage() {
       </header>
 
       {!showResults && (
-        <section aria-labelledby="upload-heading">
-          <h2 id="upload-heading" className="visually-hidden">
-            Upload a screenshot
-          </h2>
+        <section
+          className="analyzer-page__upload-section"
+          aria-labelledby="upload-heading"
+        >
+          <div className="analyzer-page__intro">
+            <p className="analyzer-page__eyebrow">UI/UX DESIGN AUDIT</p>
+
+            <h2 id="upload-heading" className="analyzer-page__title">
+              Better design starts with a closer look.
+            </h2>
+
+            <p className="analyzer-page__description">
+              Upload a screenshot of your website to uncover visual
+              inconsistencies, accessibility issues, and opportunities to
+              improve your design.
+            </p>
+          </div>
 
           {!file && <UploadDropzone onFileAccepted={handleFileAccepted} />}
 

@@ -1,13 +1,27 @@
 
 :root {
-  --color-bg: #f5f7fb;
+  /* Porcelain & Burgundy palette */
+  --color-bg: #f8f6f3;
   --color-surface: #ffffff;
-  --color-border: #e1e6ee;
-  --color-text: #172033;
-  --color-text-muted: #667085;
-  --color-accent: #087f5b;
-  --color-danger: #c53030;
-  --radius: 8px;
+  --color-border: #e7dfe0;
+  --color-text: #302a2c;
+  --color-text-muted: #74696d;
+  --color-accent: #855866;
+  --color-danger: #b42336;
+
+  /* Supporting colours */
+  --color-rose: #c7a6ac;
+  --color-mauve: #eae0e5;
+  --color-porcelain: #f8f6f3;
+
+  /* Glassmorphism */
+  --glass-background: rgba(255, 255, 255, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-blur: 14px;
+
+  /* Layout */
+  --radius: 10px;
+  --radius-lg: 16px;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 

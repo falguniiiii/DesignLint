@@ -113,67 +113,118 @@ export default function AnalyzerPage() {
           className="analyzer-page__upload-section"
           aria-labelledby="upload-heading"
         >
-          <div className="analyzer-page__intro">
-            <p className="analyzer-page__eyebrow">UI/UX DESIGN AUDIT</p>
+          <div className="analyzer-page__hero-grid">
+            <div className="analyzer-page__intro">
+              <p className="analyzer-page__eyebrow">UI/UX DESIGN AUDIT</p>
 
-            <h2 id="upload-heading" className="analyzer-page__title">
-              Better design starts with a closer look.
-            </h2>
+              <h2 id="upload-heading" className="analyzer-page__title">
+                Better design starts with a closer look.
+              </h2>
 
-            <p className="analyzer-page__description">
-              Upload a screenshot of your website to uncover visual
-              inconsistencies, accessibility issues, and opportunities to
-              improve your design.
-            </p>
+              <p className="analyzer-page__description">
+                Turn a website screenshot into a clear, practical design audit.
+                Spot visual inconsistencies and discover what to improve next.
+              </p>
+
+              <ol
+                className="analyzer-page__steps"
+                aria-label="How DesignLint works"
+              >
+                <li>
+                  <span className="analyzer-page__step-number">01</span>
+                  <span>
+                    <strong>Upload</strong>
+                    <small>Choose a screenshot of your interface.</small>
+                  </span>
+                </li>
+                <li>
+                  <span className="analyzer-page__step-number">02</span>
+                  <span>
+                    <strong>Review</strong>
+                    <small>Explore scores and highlighted findings.</small>
+                  </span>
+                </li>
+                <li>
+                  <span className="analyzer-page__step-number">03</span>
+                  <span>
+                    <strong>Improve</strong>
+                    <small>
+                      Use clear suggestions to guide your next pass.
+                    </small>
+                  </span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="analyzer-page__upload-panel">
+              <div className="analyzer-page__panel-heading">
+                <span className="analyzer-page__panel-kicker">
+                  START YOUR AUDIT
+                </span>
+              </div>
+
+              {!file && <UploadDropzone onFileAccepted={handleFileAccepted} />}
+
+              {file && (
+                <ImagePreviewCard
+                  file={file}
+                  previewUrl={previewUrl}
+                  dimensions={dimensions}
+                  onRemove={handleRemove}
+                />
+              )}
+
+              <button
+                type="button"
+                className="analyze-button"
+                disabled={
+                  !file || backendStatus !== "online" || status === "analyzing"
+                }
+                onClick={handleAnalyze}
+              >
+                {status === "analyzing"
+                  ? "Analyzing…"
+                  : status === "error"
+                    ? "Try again"
+                    : "Analyze Design"}
+              </button>
+
+              {file && backendStatus !== "online" && (
+                <p className="analyzer-page__hint">
+                  The backend isn't reachable yet, so analysis can't run. Start
+                  it, then press “Retry connection”.
+                </p>
+              )}
+
+              {status === "analyzing" && (
+                <AnalysisProgress uploaded={uploaded} />
+              )}
+
+              {status === "error" && (
+                <div className="analyzer-page__error" role="alert">
+                  <p className="analyzer-page__error-title">
+                    The analysis didn't complete
+                  </p>
+                  <p>{error}</p>
+                  <p className="analyzer-page__error-hint">
+                    Your screenshot is still selected. Press “Try again”, or
+                    remove it to choose a different one.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {!file && <UploadDropzone onFileAccepted={handleFileAccepted} />}
-
-          {file && (
-            <ImagePreviewCard
-              file={file}
-              previewUrl={previewUrl}
-              dimensions={dimensions}
-              onRemove={handleRemove}
-            />
-          )}
-
-          <button
-            type="button"
-            className="analyze-button"
-            disabled={
-              !file || backendStatus !== "online" || status === "analyzing"
-            }
-            onClick={handleAnalyze}
+          <div
+            className="analyzer-page__audit-strip"
+            aria-label="Audit categories"
           >
-            {status === "analyzing"
-              ? "Analyzing…"
-              : status === "error"
-                ? "Try again"
-                : "Analyze Design"}
-          </button>
-
-          {file && backendStatus !== "online" && (
-            <p className="analyzer-page__hint">
-              The backend isn't reachable yet, so analysis can't run. Start it,
-              then press “Retry connection”.
-            </p>
-          )}
-
-          {status === "analyzing" && <AnalysisProgress uploaded={uploaded} />}
-
-          {status === "error" && (
-            <div className="analyzer-page__error" role="alert">
-              <p className="analyzer-page__error-title">
-                The analysis didn't complete
-              </p>
-              <p>{error}</p>
-              <p className="analyzer-page__error-hint">
-                Your screenshot is still selected — press “Try again”, or remove
-                it to choose a different one.
-              </p>
-            </div>
-          )}
+            <span className="analyzer-page__audit-label">A closer look at</span>
+            <span>Color &amp; contrast</span>
+            <span>Typography</span>
+            <span>Spacing</span>
+            <span>Consistency</span>
+          </div>
         </section>
       )}
 

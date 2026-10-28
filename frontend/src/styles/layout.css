@@ -11,7 +11,7 @@ body {
 }
 
 .analyzer-page {
-  max-width: 720px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 64px 24px;
 }
@@ -71,6 +71,149 @@ body {
   color: var(--color-text-muted);
   font-size: 15px;
   line-height: 1.8;
+}
+
+/* Landing page layout */
+
+.analyzer-page__hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.88fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+}
+
+.analyzer-page__intro {
+  max-width: 560px;
+}
+
+.analyzer-page__steps {
+  display: grid;
+  gap: 22px;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analyzer-page__steps li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.analyzer-page__step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.analyzer-page__steps li > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 2px;
+}
+
+.analyzer-page__steps strong {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.analyzer-page__steps small {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Upload panel with subtle glass effect */
+
+.analyzer-page__upload-panel {
+  min-width: 0;
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-background);
+  box-shadow: 0 18px 48px rgba(48, 42, 44, 0.07);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.analyzer-page__panel-heading {
+  margin-bottom: 20px;
+}
+
+.analyzer-page__panel-kicker {
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+/* Audit categories */
+
+.analyzer-page__audit-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.analyzer-page__audit-label {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Tablet and smaller screens */
+
+@media (max-width: 800px) {
+  .analyzer-page__hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+  }
+
+  .analyzer-page__intro {
+    max-width: 680px;
+  }
+
+  .analyzer-page__upload-panel {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .analyzer-page {
+    padding: 36px 18px;
+  }
+
+  .analyzer-page__hero-grid {
+    gap: 28px;
+  }
+
+  .analyzer-page__steps {
+    gap: 18px;
+    margin-top: 24px;
+  }
+
+  .analyzer-page__upload-panel {
+    padding: 18px;
+  }
+
+  .analyzer-page__audit-strip {
+    gap: 12px 18px;
+  }
 }
 
 @media (max-width: 560px) {

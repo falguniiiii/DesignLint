@@ -72,9 +72,16 @@
 .finding {
   border: 1px solid var(--color-border);
   border-left-width: 3px;
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  background: var(--glass-background);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 3px 12px rgba(48, 42, 44, 0.035);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .finding--major {

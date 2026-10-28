@@ -30,7 +30,9 @@ function PaletteSwatches({ palette }) {
             <span className="palette-swatches__role">
               {c.role} <span className="audit-results__mono">{c.hex}</span>
             </span>
-            <span className={`palette-swatches__source palette-swatches__source--${c.source || "derived"}`}>
+            <span
+              className={`palette-swatches__source palette-swatches__source--${c.source || "derived"}`}
+            >
               {SOURCE_LABEL[c.source] || SOURCE_LABEL.derived}
             </span>
             <span className="palette-swatches__usage">{c.usage}</span>
@@ -41,7 +43,11 @@ function PaletteSwatches({ palette }) {
   );
 }
 
-export default function AuditResults({ audit, activeFindingId, onFindingClick }) {
+export default function AuditResults({
+  audit,
+  activeFindingId,
+  onFindingClick,
+}) {
   const { overallScore, categoryScores, findings } = audit;
 
   return (
@@ -53,9 +59,10 @@ export default function AuditResults({ audit, activeFindingId, onFindingClick })
         <span className="audit-results__score-max">/100</span>
       </div>
       <p className="audit-results__score-explainer">
-        Each category starts at 100 and loses points for every finding (major −10, minor −5,
-        suggestion −2). The overall score averages the four categories. It reflects the
-        patterns DesignLint's rules can check, not a full design review.
+        Each category starts at 100 and loses points for every finding (major
+        −10, minor −5, suggestion −2). The overall score averages the four
+        categories. It reflects the patterns DesignLint's rules can check, not a
+        full design review.
       </p>
 
       <h3 className="audit-results__subheading">Category scores</h3>
@@ -68,7 +75,10 @@ export default function AuditResults({ audit, activeFindingId, onFindingClick })
               role="img"
               aria-label={`${c.category} score ${c.score} out of 100`}
             >
-              <span className="audit-results__bar-fill" style={{ width: `${c.score}%` }} />
+              <span
+                className="audit-results__bar-fill"
+                style={{ width: `${c.score}%` }}
+              />
             </span>
             <span className="audit-results__mono">{c.score}</span>
           </li>
@@ -79,9 +89,10 @@ export default function AuditResults({ audit, activeFindingId, onFindingClick })
 
       {findings.length === 0 && (
         <p className="audit-results__empty">
-          No issues were flagged by DesignLint's current rules. That's a good sign, but it
-          doesn't guarantee the design is perfect — the rules only check a limited set of
-          patterns (color count, contrast, type sizes, spacing and consistency).
+          No issues were flagged by DesignLint's current rules. That's a good
+          sign, but it doesn't guarantee the design is perfect — the rules only
+          check a limited set of patterns (color count, contrast, type sizes,
+          spacing and consistency).
         </p>
       )}
 
@@ -99,7 +110,9 @@ export default function AuditResults({ audit, activeFindingId, onFindingClick })
               {f.relatedElements.length > 0 && (
                 <span className="finding__number">{index + 1}</span>
               )}
-              <span className={`finding__severity finding__severity--${f.severity}`}>
+              <span
+                className={`finding__severity finding__severity--${f.severity}`}
+              >
                 {SEVERITY_LABEL[f.severity]}
               </span>
               <span className="finding__category">{f.category}</span>
@@ -121,29 +134,46 @@ export default function AuditResults({ audit, activeFindingId, onFindingClick })
                   onFindingClick?.(f.id);
                 }}
               >
-                {activeFindingId === f.id ? "Hide on screenshot" : `Show issue ${index + 1} on screenshot`}
+                {activeFindingId === f.id
+                  ? "Hide on screenshot"
+                  : `Show issue ${index + 1} on screenshot`}
               </button>
             )}
 
-            <div className="finding__section">
-              <span className="finding__section-label">Why it matters</span>
-              <p className="finding__section-body">{f.recommendation.whyItMatters}</p>
-            </div>
+            <details
+              className="finding__details"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <summary className="finding__details-summary">
+                Recommendation details
+              </summary>
 
-            <div className="finding__section">
-              <span className="finding__section-label">Try this</span>
-              <p className="finding__section-body">{f.recommendation.fix}</p>
-              {f.recommendation.suggestedValue && (
-                <p className="finding__suggested-value">{f.recommendation.suggestedValue}</p>
-              )}
-            </div>
-
-            {f.recommendation.palette && (
               <div className="finding__section">
-                <span className="finding__section-label">Suggested palette</span>
-                <PaletteSwatches palette={f.recommendation.palette} />
+                <span className="finding__section-label">Why it matters</span>
+                <p className="finding__section-body">
+                  {f.recommendation.whyItMatters}
+                </p>
               </div>
-            )}
+
+              <div className="finding__section">
+                <span className="finding__section-label">Try this</span>
+                <p className="finding__section-body">{f.recommendation.fix}</p>
+                {f.recommendation.suggestedValue && (
+                  <p className="finding__suggested-value">
+                    {f.recommendation.suggestedValue}
+                  </p>
+                )}
+              </div>
+
+              {f.recommendation.palette && (
+                <div className="finding__section">
+                  <span className="finding__section-label">
+                    Suggested palette
+                  </span>
+                  <PaletteSwatches palette={f.recommendation.palette} />
+                </div>
+              )}
+            </details>
           </li>
         ))}
       </ul>

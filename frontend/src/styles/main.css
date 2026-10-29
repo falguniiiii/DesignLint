@@ -1,7 +1,8 @@
 @import "./variables.css";
 @import "./layout.css";
 @import "./components.css";
-@import "./results.css";
+@import "./findings.css";
+@import "./palette.css";
 @import "./results-overview.css";
 @import "./results-layout.css";
 @import "./screenshot-viewer.css";

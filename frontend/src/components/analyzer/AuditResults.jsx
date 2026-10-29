@@ -54,36 +54,38 @@ export default function AuditResults({
     <div className="audit-results">
       <h2 className="visually-hidden">Audit results</h2>
 
-      <div className="audit-results__score">
-        <span className="audit-results__score-value">{overallScore}</span>
-        <span className="audit-results__score-max">/100</span>
-      </div>
-      <p className="audit-results__score-explainer">
-        Each category starts at 100 and loses points for every finding (major
-        −10, minor −5, suggestion −2). The overall score averages the four
-        categories. It reflects the patterns DesignLint's rules can check, not a
-        full design review.
-      </p>
+      <div className="audit-results__overview">
+        <div className="audit-results__score">
+          <span className="audit-results__score-value">{overallScore}</span>
+          <span className="audit-results__score-max">/100</span>
+        </div>
+        <p className="audit-results__score-explainer">
+          Each category starts at 100 and loses points for every finding (major
+          −10, minor −5, suggestion −2). The overall score averages the four
+          categories. It reflects the patterns DesignLint's rules can check, not
+          a full design review.
+        </p>
 
-      <h3 className="audit-results__subheading">Category scores</h3>
-      <ul className="audit-results__categories">
-        {categoryScores.map((c) => (
-          <li key={c.category} className="audit-results__category">
-            <span>{c.category}</span>
-            <span
-              className="audit-results__bar"
-              role="img"
-              aria-label={`${c.category} score ${c.score} out of 100`}
-            >
+        <h3 className="audit-results__subheading">Category scores</h3>
+        <ul className="audit-results__categories">
+          {categoryScores.map((c) => (
+            <li key={c.category} className="audit-results__category">
+              <span>{c.category}</span>
               <span
-                className="audit-results__bar-fill"
-                style={{ width: `${c.score}%` }}
-              />
-            </span>
-            <span className="audit-results__mono">{c.score}</span>
-          </li>
-        ))}
-      </ul>
+                className="audit-results__bar"
+                role="img"
+                aria-label={`${c.category} score ${c.score} out of 100`}
+              >
+                <span
+                  className="audit-results__bar-fill"
+                  style={{ width: `${c.score}%` }}
+                />
+              </span>
+              <span className="audit-results__mono">{c.score}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <h3>Findings ({findings.length})</h3>
 

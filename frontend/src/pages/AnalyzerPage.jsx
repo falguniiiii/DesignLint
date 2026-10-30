@@ -135,7 +135,7 @@ export default function AnalyzerPage() {
           aria-labelledby="upload-heading"
         >
           <div className="analyzer-page__hero-grid">
-            <div id="about" className="analyzer-page__intro">
+            <div className="analyzer-page__intro">
               <p className="analyzer-page__eyebrow">UI/UX DESIGN AUDIT</p>
 
               <h2 id="upload-heading" className="analyzer-page__title">
@@ -146,35 +146,6 @@ export default function AnalyzerPage() {
                 Turn a website screenshot into a clear, practical design audit.
                 Spot visual inconsistencies and discover what to improve next.
               </p>
-
-              <ol
-                className="analyzer-page__steps"
-                aria-label="How DesignLint works"
-              >
-                <li>
-                  <span className="analyzer-page__step-number">01</span>
-                  <span>
-                    <strong>Upload</strong>
-                    <small>Choose a screenshot of your interface.</small>
-                  </span>
-                </li>
-                <li>
-                  <span className="analyzer-page__step-number">02</span>
-                  <span>
-                    <strong>Review</strong>
-                    <small>Explore scores and highlighted findings.</small>
-                  </span>
-                </li>
-                <li>
-                  <span className="analyzer-page__step-number">03</span>
-                  <span>
-                    <strong>Improve</strong>
-                    <small>
-                      Use clear suggestions to guide your next pass.
-                    </small>
-                  </span>
-                </li>
-              </ol>
             </div>
 
             <div id="start-audit" className="analyzer-page__upload-panel">
@@ -246,6 +217,74 @@ export default function AnalyzerPage() {
             <span>Typography</span>
             <span>Spacing</span>
             <span>Consistency</span>
+          </div>
+        </section>
+      )}
+
+      {!showResults && (
+        <section
+          id="about"
+          className="analyzer-page__about"
+          aria-labelledby="about-heading"
+        >
+          <div className="analyzer-page__about-intro">
+            <div className="analyzer-page__about-copy">
+              <p className="analyzer-page__about-eyebrow">ABOUT DESIGNLINT</p>
+
+              <h2 id="about-heading">
+                Design feedback grounded in what’s on the screen.
+              </h2>
+            </div>
+
+            <p className="analyzer-page__about-description">
+              DesignLint turns a website screenshot into structured visual
+              feedback. It identifies interface elements and evaluates their
+              visual properties against defined design rules, helping you
+              understand what needs attention and why.
+            </p>
+          </div>
+
+          <div className="analyzer-page__about-process">
+            <div className="analyzer-page__about-process-heading">
+              <p className="analyzer-page__about-eyebrow">HOW IT WORKS</p>
+
+              <h3>From screenshot to clearer next steps.</h3>
+            </div>
+
+            <ol className="analyzer-page__about-steps">
+              <li>
+                <span className="analyzer-page__about-number">01</span>
+                <div>
+                  <h4>Upload a screenshot</h4>
+                  <p>
+                    Choose a screenshot of the website or interface you want to
+                    review.
+                  </p>
+                </div>
+              </li>
+
+              <li>
+                <span className="analyzer-page__about-number">02</span>
+                <div>
+                  <h4>Inspect the design</h4>
+                  <p>
+                    Visual information is extracted and evaluated against
+                    DesignLint’s defined design rules.
+                  </p>
+                </div>
+              </li>
+
+              <li>
+                <span className="analyzer-page__about-number">03</span>
+                <div>
+                  <h4>Review and improve</h4>
+                  <p>
+                    Explore the audit score, highlighted findings and practical
+                    recommendations.
+                  </p>
+                </div>
+              </li>
+            </ol>
           </div>
         </section>
       )}

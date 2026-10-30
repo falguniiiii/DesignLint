@@ -96,7 +96,11 @@ export default function AnalyzerPage() {
       className={`analyzer-page ${showResults ? "analyzer-page--results" : ""}`}
     >
       <header className="analyzer-page__header">
-        <h1>DesignLint</h1>
+        <h1 className="analyzer-page__brand">
+          <img src="/brand/designlint-mark.svg" alt="" aria-hidden="true" />
+          <span>DesignLint</span>
+        </h1>
+
         {backendStatus === "offline" && (
           <button
             type="button"

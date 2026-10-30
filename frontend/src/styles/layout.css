@@ -18,19 +18,29 @@ body {
 
 .analyzer-page__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 40px;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 24px;
 }
 
-.analyzer-page__header h1 {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.analyzer-page__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   color: var(--color-text);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.analyzer-page__brand img {
+  display: block;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
 }
 
 /* Hero section: Porcelain & Burgundy */

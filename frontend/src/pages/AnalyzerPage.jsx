@@ -93,13 +93,30 @@ export default function AnalyzerPage() {
 
   return (
     <main
+      id="top"
       className={`analyzer-page ${showResults ? "analyzer-page--results" : ""}`}
     >
       <header className="analyzer-page__header">
         <h1 className="analyzer-page__brand">
-          <img src="/brand/designlint-mark.svg" alt="" aria-hidden="true" />
-          <span>DesignLint</span>
+          <a
+            href="#top"
+            className="analyzer-page__brand-link"
+            aria-label="DesignLint home"
+          >
+            <img src="/brand/designlint-mark.svg" alt="" aria-hidden="true" />
+            <span>DesignLint</span>
+          </a>
         </h1>
+
+        {!showResults && (
+          <nav className="analyzer-page__nav" aria-label="Main navigation">
+            <a href="#about">About</a>
+            <a href="#audit-checks">Audit checks</a>
+            <a href="#start-audit" className="analyzer-page__nav-cta">
+              Start an audit
+            </a>
+          </nav>
+        )}
 
         {backendStatus === "offline" && (
           <button
@@ -118,7 +135,7 @@ export default function AnalyzerPage() {
           aria-labelledby="upload-heading"
         >
           <div className="analyzer-page__hero-grid">
-            <div className="analyzer-page__intro">
+            <div id="about" className="analyzer-page__intro">
               <p className="analyzer-page__eyebrow">UI/UX DESIGN AUDIT</p>
 
               <h2 id="upload-heading" className="analyzer-page__title">
@@ -160,7 +177,7 @@ export default function AnalyzerPage() {
               </ol>
             </div>
 
-            <div className="analyzer-page__upload-panel">
+            <div id="start-audit" className="analyzer-page__upload-panel">
               <div className="analyzer-page__panel-heading">
                 <span className="analyzer-page__panel-kicker">
                   START YOUR AUDIT
@@ -220,6 +237,7 @@ export default function AnalyzerPage() {
           </div>
 
           <div
+            id="audit-checks"
             className="analyzer-page__audit-strip"
             aria-label="Audit categories"
           >

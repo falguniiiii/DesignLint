@@ -17,6 +17,7 @@ export default function AnalyzerPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [activeFindingId, setActiveFindingId] = useState(null);
+  const [activeSection, setActiveSection] = useState(null);
 
   // One check on page load, plus a manual "Retry connection" button when
   // the backend is offline. No polling: it only re-checks when asked.
@@ -91,6 +92,39 @@ export default function AnalyzerPage() {
 
   const showResults = status === "done" && result;
 
+  useEffect(() => {
+    const sectionOrder = ["start-audit", "audit-checks", "about"];
+
+    const updateActiveSection = () => {
+      const activationPoint = window.scrollY + 140;
+      let currentSection = null;
+
+      sectionOrder.forEach((id) => {
+        const element = document.getElementById(id);
+
+        if (!element) return;
+
+        const sectionTop = element.getBoundingClientRect().top + window.scrollY;
+
+        if (sectionTop <= activationPoint) {
+          currentSection = id;
+        }
+      });
+
+      setActiveSection(currentSection);
+    };
+
+    updateActiveSection();
+
+    window.addEventListener("scroll", updateActiveSection, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", updateActiveSection);
+    };
+  }, [showResults]);
+
   return (
     <main
       id="top"
@@ -110,9 +144,31 @@ export default function AnalyzerPage() {
 
         {!showResults && (
           <nav className="analyzer-page__nav" aria-label="Main navigation">
-            <a href="#about">About</a>
-            <a href="#audit-checks">Audit checks</a>
-            <a href="#start-audit" className="analyzer-page__nav-cta">
+            <a
+              href="#about"
+              aria-current={activeSection === "about" ? "location" : undefined}
+              onClick={() => setActiveSection("about")}
+            >
+              About
+            </a>
+
+            <a
+              href="#audit-checks"
+              aria-current={
+                activeSection === "audit-checks" ? "location" : undefined
+              }
+              onClick={() => setActiveSection("audit-checks")}
+            >
+              Audit checks
+            </a>
+
+            <a
+              href="#start-audit"
+              aria-current={
+                activeSection === "start-audit" ? "location" : undefined
+              }
+              onClick={() => setActiveSection("start-audit")}
+            >
               Start an audit
             </a>
           </nav>

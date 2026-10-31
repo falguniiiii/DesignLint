@@ -22,24 +22,36 @@
   color: var(--color-text-muted);
 }
 
+/* ========================================
+   UPLOAD DROPZONE
+======================================== */
+
 .upload-dropzone {
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
   padding: 56px 24px;
   text-align: center;
   cursor: pointer;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  background: rgba(248, 246, 243, 0.45);
+
+  transition:
+    border-color var(--transition-normal),
+    background-color var(--transition-normal),
+    box-shadow var(--transition-normal);
 }
 
 .upload-dropzone:hover,
 .upload-dropzone:focus-visible {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
+  background: rgba(133, 88, 102, 0.045);
+  box-shadow: var(--focus-ring);
 }
 
 .upload-dropzone.is-dragging {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-style: solid;
+  background: rgba(133, 88, 102, 0.075);
+  box-shadow: var(--focus-ring);
 }
 
 .upload-dropzone__title {

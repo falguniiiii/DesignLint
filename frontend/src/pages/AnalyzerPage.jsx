@@ -18,6 +18,7 @@ export default function AnalyzerPage() {
   const [error, setError] = useState(null);
   const [activeFindingId, setActiveFindingId] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // One check on page load, plus a manual "Retry connection" button when
   // the backend is offline. No polling: it only re-checks when asked.
@@ -125,12 +126,32 @@ export default function AnalyzerPage() {
     };
   }, [showResults]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    handleScroll();
+
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
     <main
       id="top"
       className={`analyzer-page ${showResults ? "analyzer-page--results" : ""}`}
     >
-      <header className="analyzer-page__header">
+      <header
+        className={`analyzer-page__header ${
+          isScrolled ? "analyzer-page__header--scrolled" : ""
+        }`}
+      >
         <h1 className="analyzer-page__brand">
           <a
             href="#top"

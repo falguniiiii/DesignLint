@@ -223,6 +223,94 @@ export default function AnalyzerPage() {
                 Turn a website screenshot into a clear, practical design audit.
                 Spot visual inconsistencies and discover what to improve next.
               </p>
+
+              <div
+                className="analyzer-page__preview"
+                aria-label="Illustrative preview of a DesignLint audit"
+              >
+                <div className="analyzer-page__preview-header">
+                  <span className="analyzer-page__preview-label">
+                    A LOOK INSIDE DESIGNLINT
+                  </span>
+                  <span className="analyzer-page__preview-badge">
+                    Product preview
+                  </span>
+                </div>
+
+                <div className="analyzer-page__preview-content">
+                  <div className="analyzer-page__preview-screen">
+                    <div className="analyzer-page__preview-browser">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+
+                    <div className="analyzer-page__preview-website">
+                      <div className="analyzer-page__preview-website-nav">
+                        <span className="analyzer-page__preview-logo" />
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+
+                      <div className="analyzer-page__preview-website-hero">
+                        <div className="analyzer-page__preview-lines">
+                          <span />
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+
+                        <div className="analyzer-page__preview-image" />
+                      </div>
+
+                      <div className="analyzer-page__preview-website-cards">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    </div>
+
+                    <span className="analyzer-page__preview-marker analyzer-page__preview-marker--one">
+                      01
+                    </span>
+                    <span className="analyzer-page__preview-marker analyzer-page__preview-marker--two">
+                      02
+                    </span>
+                  </div>
+
+                  <div className="analyzer-page__preview-findings">
+                    <div className="analyzer-page__preview-findings-heading">
+                      <span>Audit findings</span>
+                      <span>Preview</span>
+                    </div>
+
+                    <div className="analyzer-page__preview-finding">
+                      <span className="analyzer-page__preview-finding-number">
+                        01
+                      </span>
+                      <div>
+                        <strong>Color &amp; contrast</strong>
+                        <span>Review text readability</span>
+                      </div>
+                    </div>
+
+                    <div className="analyzer-page__preview-finding">
+                      <span className="analyzer-page__preview-finding-number">
+                        02
+                      </span>
+                      <div>
+                        <strong>Visual consistency</strong>
+                        <span>Inspect element alignment</span>
+                      </div>
+                    </div>
+
+                    <p className="analyzer-page__preview-note">
+                      Illustrative interface preview
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div id="start-audit" className="analyzer-page__upload-panel">

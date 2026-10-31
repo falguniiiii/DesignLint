@@ -1,4 +1,3 @@
-
 * {
   box-sizing: border-box;
 }
@@ -27,11 +26,7 @@ body {
   margin-bottom: 32px;
   padding: 10px 0;
   border-bottom: 1px solid var(--color-border);
-  background: color-mix(
-    in srgb,
-    var(--color-bg) 92%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -158,6 +153,271 @@ body {
   line-height: 1.8;
 }
 
+/* Hero product preview */
+
+.analyzer-page__preview {
+  width: 100%;
+  max-width: 560px;
+  margin-top: 34px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-background);
+  box-shadow: var(--shadow-md);
+}
+
+.analyzer-page__preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.analyzer-page__preview-label {
+  color: var(--color-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.analyzer-page__preview-badge {
+  padding: 5px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.analyzer-page__preview-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(130px, 0.85fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* Miniature website */
+
+.analyzer-page__preview-screen {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.analyzer-page__preview-browser {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-bottom: 1px solid #eee8e7;
+  background: #faf8f7;
+}
+
+.analyzer-page__preview-browser span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d8c9cc;
+}
+
+.analyzer-page__preview-website {
+  padding: 13px 12px;
+}
+
+.analyzer-page__preview-website-nav {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.analyzer-page__preview-website-nav span {
+  width: 24px;
+  height: 4px;
+  border-radius: 4px;
+  background: #e9e1e2;
+}
+
+.analyzer-page__preview-website-nav .analyzer-page__preview-logo {
+  width: 35px;
+  height: 7px;
+  margin-right: auto;
+  background: #855866;
+}
+
+.analyzer-page__preview-website-hero {
+  display: grid;
+  grid-template-columns: 1fr 0.85fr;
+  gap: 9px;
+  align-items: center;
+}
+
+.analyzer-page__preview-lines {
+  display: grid;
+  gap: 7px;
+}
+
+.analyzer-page__preview-lines span {
+  height: 5px;
+  border-radius: 4px;
+  background: #e9e1e2;
+}
+
+.analyzer-page__preview-lines span:first-child {
+  width: 95%;
+  height: 8px;
+  background: #855866;
+}
+
+.analyzer-page__preview-lines span:nth-child(2) {
+  width: 80%;
+}
+
+.analyzer-page__preview-lines span:nth-child(3) {
+  width: 90%;
+}
+
+.analyzer-page__preview-lines span:last-child {
+  width: 55%;
+}
+
+.analyzer-page__preview-image {
+  min-height: 76px;
+  border-radius: 5px;
+  background: linear-gradient(145deg, #eae0e5, #c7a6ac);
+}
+
+.analyzer-page__preview-website-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.analyzer-page__preview-website-cards span {
+  height: 32px;
+  border: 1px solid #eee8e7;
+  border-radius: 4px;
+  background: #faf8f7;
+}
+
+/* Audit markers */
+
+.analyzer-page__preview-marker {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 23px;
+  height: 23px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(48, 42, 44, 0.18);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.analyzer-page__preview-marker--one {
+  top: 47%;
+  left: 43%;
+}
+
+.analyzer-page__preview-marker--two {
+  right: 15%;
+  bottom: 20%;
+}
+
+/* Findings panel */
+
+.analyzer-page__preview-findings {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 11px 9px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.analyzer-page__preview-findings-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.analyzer-page__preview-findings-heading span:first-child {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.analyzer-page__preview-findings-heading span:last-child {
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.analyzer-page__preview-finding {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.analyzer-page__preview-finding-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+  border-radius: 5px;
+  background: var(--color-mauve);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.analyzer-page__preview-finding > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.analyzer-page__preview-finding strong {
+  color: var(--color-text);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.analyzer-page__preview-finding > div span {
+  color: var(--color-text-muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.analyzer-page__preview-note {
+  margin: auto 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
 /* Landing page layout */
 
 .analyzer-page__hero-grid {
@@ -279,6 +539,20 @@ body {
 }
 
 @media (max-width: 560px) {
+  .analyzer-page__preview {
+    margin-top: 26px;
+    padding: 12px;
+  }
+
+  .analyzer-page__preview-content {
+    grid-template-columns: minmax(0, 1.2fr) minmax(110px, 0.8fr);
+    gap: 8px;
+  }
+
+  .analyzer-page__preview-website {
+    padding: 10px 8px;
+  }
+
   .analyzer-page {
     padding: 36px 18px;
   }

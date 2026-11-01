@@ -94,7 +94,12 @@ export default function AnalyzerPage() {
   const showResults = status === "done" && result;
 
   useEffect(() => {
-    const sectionOrder = ["start-audit", "audit-checks", "about"];
+    const sectionOrder = [
+      "about",
+      "how-it-works",
+      "what-we-check",
+      "get-started",
+    ];
 
     const updateActiveSection = () => {
       const activationPoint = window.scrollY + 140;
@@ -165,32 +170,26 @@ export default function AnalyzerPage() {
 
         {!showResults && (
           <nav className="analyzer-page__nav" aria-label="Main navigation">
-            <a
-              href="#about"
-              aria-current={activeSection === "about" ? "location" : undefined}
-              onClick={() => setActiveSection("about")}
-            >
+            <a href="#about" onClick={() => setActiveSection("about")}>
               About
             </a>
-
             <a
-              href="#audit-checks"
-              aria-current={
-                activeSection === "audit-checks" ? "location" : undefined
-              }
-              onClick={() => setActiveSection("audit-checks")}
+              href="#how-it-works"
+              onClick={() => setActiveSection("how-it-works")}
             >
-              Audit checks
+              How it works
             </a>
-
             <a
-              href="#start-audit"
-              aria-current={
-                activeSection === "start-audit" ? "location" : undefined
-              }
-              onClick={() => setActiveSection("start-audit")}
+              href="#what-we-check"
+              onClick={() => setActiveSection("what-we-check")}
             >
-              Start an audit
+              What we check
+            </a>
+            <a
+              href="#get-started"
+              onClick={() => setActiveSection("get-started")}
+            >
+              Get started
             </a>
           </nav>
         )}
@@ -223,6 +222,19 @@ export default function AnalyzerPage() {
                 Turn a website screenshot into a clear, practical design audit.
                 Spot visual inconsistencies and discover what to improve next.
               </p>
+              <div className="landing-hero-actions">
+                <a href="#get-started" className="landing-primary-link">
+                  Upload your screenshot <span>↗</span>
+                </a>
+                <a href="#how-it-works" className="landing-text-link">
+                  See how it works
+                </a>
+              </div>
+              <div className="landing-proof-points">
+                <span>✦ Rule-based visual checks</span>
+                <span>✦ Actionable findings</span>
+                <span>✦ No account required</span>
+              </div>
 
               <div
                 className="analyzer-page__preview"
@@ -312,7 +324,142 @@ export default function AnalyzerPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+      )}
 
+      {!showResults && (
+        <section
+          id="about"
+          className="analyzer-page__about"
+          aria-labelledby="about-heading"
+        >
+          <div className="analyzer-page__about-intro">
+            <div className="analyzer-page__about-copy">
+              <p className="analyzer-page__about-eyebrow">ABOUT DESIGNLINT</p>
+
+              <h2 id="about-heading">
+                Design feedback grounded in what’s on the screen.
+              </h2>
+            </div>
+
+            <p className="analyzer-page__about-description">
+              DesignLint turns a website screenshot into structured visual
+              feedback. It identifies interface elements and evaluates their
+              visual properties against defined design rules, helping you
+              understand what needs attention and why.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {!showResults && (
+        <section
+          id="how-it-works"
+          className="landing-section landing-how"
+          aria-labelledby="how-heading"
+        >
+          <div className="landing-section__heading">
+            <p className="landing-eyebrow">SIMPLE PROCESS</p>
+            <h2 id="how-heading">How it works</h2>
+            <p>Get useful design insights in three straightforward steps.</p>
+          </div>
+          <ol className="landing-steps">
+            <li>
+              <span className="landing-step-icon">↥</span>
+              <span className="landing-step-index">01 / UPLOAD</span>
+              <h3>Share a screenshot</h3>
+              <p>
+                Choose a screenshot of the website or interface you want to
+                review.
+              </p>
+            </li>
+            <li>
+              <span className="landing-step-icon">⌕</span>
+              <span className="landing-step-index">02 / ANALYZE</span>
+              <h3>Inspect the design</h3>
+              <p>
+                DesignLint extracts visual details and checks them against
+                defined design rules.
+              </p>
+            </li>
+            <li>
+              <span className="landing-step-icon">✳</span>
+              <span className="landing-step-index">03 / IMPROVE</span>
+              <h3>Make informed changes</h3>
+              <p>
+                Review the score, highlighted findings and practical
+                recommendations.
+              </p>
+            </li>
+          </ol>
+        </section>
+      )}
+
+      {!showResults && (
+        <section
+          id="what-we-check"
+          className="landing-section landing-checks"
+          aria-labelledby="checks-heading"
+        >
+          <div className="landing-section__heading">
+            <p className="landing-eyebrow">AUDIT CATEGORIES</p>
+            <h2 id="checks-heading">What we check</h2>
+            <p>
+              A closer look at the visual details that shape a clear, consistent
+              interface.
+            </p>
+          </div>
+          <div className="landing-check-grid">
+            <article>
+              <span className="landing-check-icon">◉</span>
+              <h3>Color &amp; contrast</h3>
+              <p>
+                Contrast, color usage and visual balance across interface
+                elements.
+              </p>
+            </article>
+            <article>
+              <span className="landing-check-icon">Aa</span>
+              <h3>Typography</h3>
+              <p>
+                Text hierarchy, font sizing and readable type relationships.
+              </p>
+            </article>
+            <article>
+              <span className="landing-check-icon">⌗</span>
+              <h3>Spacing</h3>
+              <p>
+                Margins, padding, alignment and the rhythm between elements.
+              </p>
+            </article>
+            <article>
+              <span className="landing-check-icon">◇</span>
+              <h3>Consistency</h3>
+              <p>
+                Repeated components, visual patterns and interface consistency.
+              </p>
+            </article>
+          </div>
+        </section>
+      )}
+
+      {!showResults && (
+        <section
+          id="get-started"
+          className="landing-cta"
+          aria-labelledby="get-started-heading"
+        >
+          <div className="landing-cta__copy">
+            <p className="landing-eyebrow">READY WHEN YOU ARE</p>
+            <h2 id="get-started-heading">
+              Make your design clearer, one review at a time.
+            </h2>
+            <p>
+              Upload a screenshot and get focused visual feedback in seconds.
+            </p>
+          </div>
+          <div className="landing-cta__upload">
             <div id="start-audit" className="analyzer-page__upload-panel">
               <div className="analyzer-page__panel-heading">
                 <span className="analyzer-page__panel-kicker">
@@ -371,87 +518,17 @@ export default function AnalyzerPage() {
               )}
             </div>
           </div>
-
-          <div
-            id="audit-checks"
-            className="analyzer-page__audit-strip"
-            aria-label="Audit categories"
-          >
-            <span className="analyzer-page__audit-label">A closer look at</span>
-            <span>Color &amp; contrast</span>
-            <span>Typography</span>
-            <span>Spacing</span>
-            <span>Consistency</span>
-          </div>
         </section>
       )}
 
       {!showResults && (
-        <section
-          id="about"
-          className="analyzer-page__about"
-          aria-labelledby="about-heading"
-        >
-          <div className="analyzer-page__about-intro">
-            <div className="analyzer-page__about-copy">
-              <p className="analyzer-page__about-eyebrow">ABOUT DESIGNLINT</p>
-
-              <h2 id="about-heading">
-                Design feedback grounded in what’s on the screen.
-              </h2>
-            </div>
-
-            <p className="analyzer-page__about-description">
-              DesignLint turns a website screenshot into structured visual
-              feedback. It identifies interface elements and evaluates their
-              visual properties against defined design rules, helping you
-              understand what needs attention and why.
-            </p>
-          </div>
-
-          <div className="analyzer-page__about-process">
-            <div className="analyzer-page__about-process-heading">
-              <p className="analyzer-page__about-eyebrow">HOW IT WORKS</p>
-
-              <h3>From screenshot to clearer next steps.</h3>
-            </div>
-
-            <ol className="analyzer-page__about-steps">
-              <li>
-                <span className="analyzer-page__about-number">01</span>
-                <div>
-                  <h4>Upload a screenshot</h4>
-                  <p>
-                    Choose a screenshot of the website or interface you want to
-                    review.
-                  </p>
-                </div>
-              </li>
-
-              <li>
-                <span className="analyzer-page__about-number">02</span>
-                <div>
-                  <h4>Inspect the design</h4>
-                  <p>
-                    Visual information is extracted and evaluated against
-                    DesignLint’s defined design rules.
-                  </p>
-                </div>
-              </li>
-
-              <li>
-                <span className="analyzer-page__about-number">03</span>
-                <div>
-                  <h4>Review and improve</h4>
-                  <p>
-                    Explore the audit score, highlighted findings and practical
-                    recommendations.
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </div>
-        </section>
+        <footer className="landing-footer">
+          <a href="#top" className="landing-footer__brand">
+            ✳ DesignLint
+          </a>
+          <span>Structured visual feedback for better interfaces.</span>
+          <a href="#top">Back to top ↑</a>
+        </footer>
       )}
 
       {showResults && (

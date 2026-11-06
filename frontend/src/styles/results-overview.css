@@ -1,22 +1,26 @@
 /* Score summary and category scores */
 
 .audit-results {
-  margin-top: 32px;
-  border-top: 1px solid var(--color-border);
-  padding-top: 24px;
+  margin-top: 24px;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .audit-results__score {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  margin-bottom: 20px;
+  grid-column: 1;
+  margin: 0;
+  align-self: center;
 }
 
 .audit-results__score-value {
-  font-size: 40px;
+  font-size: clamp(36px, 4vw, 48px);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--color-text);
 }
 
 .audit-results__score-max {
@@ -47,10 +51,11 @@
 /* Score explanation and progress bars */
 
 .audit-results__score-explainer {
-  font-size: 13px;
+  grid-column: 2;
+  margin: 0;
+  font-size: 12px;
   color: var(--color-text-muted);
-  margin: -8px 0 20px;
-  line-height: 1.5;
+  line-height: 1.7;
 }
 
 .audit-results__subheading {
@@ -80,12 +85,6 @@
 
 /* Overview card */
 
-.audit-results {
-  margin-top: 24px;
-  padding-top: 0;
-  border-top: 0;
-}
-
 .audit-results__overview {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -96,26 +95,6 @@
   border-radius: var(--radius-lg);
   background: var(--glass-background);
   box-shadow: 0 8px 28px rgba(48, 42, 44, 0.045);
-}
-
-.audit-results__score {
-  grid-column: 1;
-  margin: 0;
-  align-self: center;
-}
-
-.audit-results__score-value {
-  font-size: clamp(36px, 4vw, 48px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--color-text);
-}
-
-.audit-results__score-explainer {
-  grid-column: 2;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.7;
 }
 
 .audit-results__overview .audit-results__subheading {

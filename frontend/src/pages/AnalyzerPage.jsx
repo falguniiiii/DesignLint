@@ -18,6 +18,7 @@ export default function AnalyzerPage() {
   const [error, setError] = useState(null);
   const [activeFindingId, setActiveFindingId] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // One check on page load, plus a manual "Retry connection" button when
@@ -169,25 +170,74 @@ export default function AnalyzerPage() {
         </h1>
 
         {!showResults && (
-          <nav className="analyzer-page__nav" aria-label="Main navigation">
-            <a href="#about" onClick={() => setActiveSection("about")}>
+          <button
+            type="button"
+            className="analyzer-page__menu-toggle"
+            aria-label={
+              isMobileNavOpen ? "Close navigation menu" : "Open navigation menu"
+            }
+            aria-expanded={isMobileNavOpen}
+            aria-controls="primary-navigation"
+            onClick={() => setIsMobileNavOpen((open) => !open)}
+          >
+            <span aria-hidden="true">{isMobileNavOpen ? "×" : "☰"}</span>
+          </button>
+        )}
+
+        {!showResults && (
+          <nav
+            id="primary-navigation"
+            className={`analyzer-page__nav ${
+              isMobileNavOpen ? "analyzer-page__nav--open" : ""
+            }`}
+            aria-label="Main navigation"
+          >
+            <a
+              href="#about"
+              onClick={() => {
+                setActiveSection("about");
+                setIsMobileNavOpen(false);
+              }}
+              aria-current={activeSection === "about" ? "location" : undefined}
+            >
               About
             </a>
+
             <a
               href="#how-it-works"
-              onClick={() => setActiveSection("how-it-works")}
+              onClick={() => {
+                setActiveSection("how-it-works");
+                setIsMobileNavOpen(false);
+              }}
+              aria-current={
+                activeSection === "how-it-works" ? "location" : undefined
+              }
             >
               How it works
             </a>
+
             <a
               href="#what-we-check"
-              onClick={() => setActiveSection("what-we-check")}
+              onClick={() => {
+                setActiveSection("what-we-check");
+                setIsMobileNavOpen(false);
+              }}
+              aria-current={
+                activeSection === "what-we-check" ? "location" : undefined
+              }
             >
               What we check
             </a>
+
             <a
               href="#get-started"
-              onClick={() => setActiveSection("get-started")}
+              onClick={() => {
+                setActiveSection("get-started");
+                setIsMobileNavOpen(false);
+              }}
+              aria-current={
+                activeSection === "get-started" ? "location" : undefined
+              }
             >
               Get started
             </a>
@@ -224,7 +274,7 @@ export default function AnalyzerPage() {
               </p>
               <div className="landing-hero-actions">
                 <a href="#get-started" className="landing-primary-link">
-                  Upload your screenshot <span>↗</span>
+                  Upload your screenshot <span aria-hidden="true">↗</span>
                 </a>
                 <a href="#how-it-works" className="landing-text-link">
                   See how it works
@@ -238,7 +288,8 @@ export default function AnalyzerPage() {
 
               <div
                 className="analyzer-page__preview"
-                aria-label="Illustrative preview of a DesignLint audit"
+                role="img"
+                aria-label="Illustrative preview of a DesignLint audit showing a sample website and audit findings"
               >
                 <div className="analyzer-page__preview-header">
                   <span className="analyzer-page__preview-label">
@@ -312,8 +363,8 @@ export default function AnalyzerPage() {
                         02
                       </span>
                       <div>
-                        <strong>Visual consistency</strong>
-                        <span>Inspect element alignment</span>
+                        <strong>Component consistency</strong>
+                        <span>Compare repeated button and card dimensions</span>
                       </div>
                     </div>
 
@@ -415,29 +466,32 @@ export default function AnalyzerPage() {
               <span className="landing-check-icon">◉</span>
               <h3>Color &amp; contrast</h3>
               <p>
-                Contrast, color usage and visual balance across interface
-                elements.
+                Prominent color variety and contrast between detected text and
+                background colors, where their roles can be identified.
               </p>
             </article>
             <article>
               <span className="landing-check-icon">Aa</span>
               <h3>Typography</h3>
               <p>
-                Text hierarchy, font sizing and readable type relationships.
+                Estimated text sizes, font-size variety, small text and heading
+                hierarchy.
               </p>
             </article>
             <article>
               <span className="landing-check-icon">⌗</span>
               <h3>Spacing</h3>
               <p>
-                Margins, padding, alignment and the rhythm between elements.
+                Vertical spacing variation between repeated elements of the same
+                type.
               </p>
             </article>
             <article>
               <span className="landing-check-icon">◇</span>
               <h3>Consistency</h3>
               <p>
-                Repeated components, visual patterns and interface consistency.
+                Height consistency across repeated buttons and cards, plus card
+                width variation.
               </p>
             </article>
           </div>

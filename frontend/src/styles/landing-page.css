@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding: clamp(58px, 8vw, 104px) 0 clamp(62px, 8vw, 100px);
+  padding: 36px 0 44px;
 }
 
 .analyzer-page__intro {
@@ -25,13 +25,13 @@
 
 .analyzer-page__title {
   grid-area: title;
-  max-width: 510px;
-  margin: 0 0 18px;
+  max-width: 580px;
+  margin: 0 0 14px;
   color: var(--color-text);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(46px, 6vw, 76px);
+  font-size: clamp(44px, 4.8vw, 64px);
   font-weight: 400;
-  line-height: 1.02;
+  line-height: 1;
   letter-spacing: -0.035em;
 }
 
@@ -620,6 +620,10 @@
   color: var(--color-accent);
 }
 
+.landing-cta__upload .upload-dropzone__title {
+  color: var(--color-text);
+}
+
 .landing-cta__upload .analyze-button {
   color: #fff;
 }
@@ -709,7 +713,7 @@ html {
   }
 
   .analyzer-page__upload-section {
-    padding: 54px 0 62px;
+    padding: 24px 0 30px;
   }
 
   .analyzer-page__title {

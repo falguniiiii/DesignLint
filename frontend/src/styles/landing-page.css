@@ -672,6 +672,7 @@ html {
 
   .analyzer-page__preview {
     max-width: 760px;
+    margin-top: 28px;
   }
 
   .landing-section,
@@ -755,10 +756,6 @@ html {
     align-items: flex-start;
     flex-direction: column;
     gap: 12px;
-  }
-
-  .analyzer-page__nav a:not(:last-child) {
-    display: none;
   }
 }
 

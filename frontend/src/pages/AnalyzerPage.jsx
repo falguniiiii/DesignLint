@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import UploadDropzone from "../components/upload/UploadDropzone";
 import ImagePreviewCard from "../components/upload/ImagePreviewCard";
 import ScreenshotViewer from "../components/analyzer/ScreenshotViewer";
@@ -19,6 +19,7 @@ export default function AnalyzerPage() {
   const [activeFindingId, setActiveFindingId] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const mobileNavToggleRef = useRef(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // One check on page load, plus a manual "Retry connection" button when
@@ -118,6 +119,14 @@ export default function AnalyzerPage() {
         }
       });
 
+      const isAtPageBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 2;
+
+      if (isAtPageBottom) {
+        currentSection = sectionOrder[sectionOrder.length - 1];
+      }
+
       setActiveSection(currentSection);
     };
 
@@ -131,6 +140,25 @@ export default function AnalyzerPage() {
       window.removeEventListener("scroll", updateActiveSection);
     };
   }, [showResults]);
+
+  // Close the mobile navigation when Escape is pressed.
+
+  useEffect(() => {
+    if (!isMobileNavOpen) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsMobileNavOpen(false);
+        mobileNavToggleRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileNavOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -171,6 +199,7 @@ export default function AnalyzerPage() {
 
         {!showResults && (
           <button
+            ref={mobileNavToggleRef}
             type="button"
             className="analyzer-page__menu-toggle"
             aria-label={
@@ -273,7 +302,7 @@ export default function AnalyzerPage() {
                 Spot visual inconsistencies and discover what to improve next.
               </p>
               <div className="landing-hero-actions">
-                <a href="#get-started" className="landing-primary-link">
+                <a href="#start-audit" className="landing-primary-link">
                   Upload your screenshot <span aria-hidden="true">↗</span>
                 </a>
                 <a href="#how-it-works" className="landing-text-link">

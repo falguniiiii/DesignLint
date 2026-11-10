@@ -20,7 +20,29 @@ export default function AnalyzerPage() {
   const [activeSection, setActiveSection] = useState(null);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const mobileNavToggleRef = useRef(null);
+  const activeRequestRef = useRef(null);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      activeRequestRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (status !== "analyzing") return;
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [status]);
 
   // One check on page load, plus a manual "Retry connection" button when
   // the backend is offline. No polling: it only re-checks when asked.
@@ -40,13 +62,20 @@ export default function AnalyzerPage() {
   };
 
   const handleFileAccepted = (selectedFile) => {
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
+
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+
     const url = URL.createObjectURL(selectedFile);
+
     setFile(selectedFile);
     setPreviewUrl(url);
     setDimensions(null);
     setResult(null);
     setError(null);
     setStatus("idle");
+    setUploaded(false);
     setActiveFindingId(null);
 
     const img = new Image();
@@ -55,18 +84,27 @@ export default function AnalyzerPage() {
   };
 
   const handleRemove = () => {
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
+
     if (previewUrl) URL.revokeObjectURL(previewUrl);
+
     setFile(null);
     setPreviewUrl(null);
     setDimensions(null);
     setResult(null);
     setError(null);
     setStatus("idle");
+    setUploaded(false);
     setActiveFindingId(null);
   };
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (!file || activeRequestRef.current) return;
+
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
+
     setStatus("analyzing");
     setUploaded(false);
     setError(null);
@@ -75,13 +113,25 @@ export default function AnalyzerPage() {
 
     try {
       const data = await analyzeImage(file, {
-        onUploadComplete: () => setUploaded(true),
+        signal: controller.signal,
+        onUploadComplete: () => {
+          if (!controller.signal.aborted) setUploaded(true);
+        },
       });
+
+      if (controller.signal.aborted) return;
+
       setResult(data);
       setStatus("done");
     } catch (err) {
+      if (err.name === "AbortError") return;
+
       setError(err.message);
       setStatus("error");
+    } finally {
+      if (activeRequestRef.current === controller) {
+        activeRequestRef.current = null;
+      }
     }
   };
 
@@ -584,7 +634,15 @@ export default function AnalyzerPage() {
               )}
 
               {status === "analyzing" && (
-                <AnalysisProgress uploaded={uploaded} />
+                <>
+                  <AnalysisProgress uploaded={uploaded} />
+
+                  <p className="analyzer-page__hint" role="status">
+                    <strong>Keep this page open.</strong> Your screenshot is
+                    being analyzed. Refreshing or closing this page will cancel
+                    the analysis. Please wait until your results appear.
+                  </p>
+                </>
               )}
 
               {status === "error" && (

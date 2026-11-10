@@ -2,7 +2,8 @@
 // base URL and error handling live in one place, not scattered across
 // components.
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // Generous on purpose: complex screenshots can legitimately take a while.
 const ANALYZE_TIMEOUT_MS = 120_000;
@@ -20,8 +21,10 @@ export async function checkHealth() {
 // `detail` messages for 400/500/502 are already beginner-friendly and are
 // used as-is when present.
 function fallbackMessageForStatus(status) {
-  if (status === 413) return "That file is too large for the server. Please use a smaller image.";
-  if (status >= 500) return "The server ran into a problem while analyzing this screenshot. Please try again in a moment.";
+  if (status === 413)
+    return "That file is too large for the server. Please use a smaller image.";
+  if (status >= 500)
+    return "The server ran into a problem while analyzing this screenshot. Please try again in a moment.";
   return "The analysis couldn't be completed. Please try again.";
 }
 
@@ -37,7 +40,8 @@ function fallbackMessageForStatus(status) {
  * @param {File} file
  * @param {{ onUploadComplete?: () => void }} [options]
  */
-export function analyzeImage(file, { onUploadComplete } = {}) {
+
+export function analyzeImage(file, { onUploadComplete, signal } = {}) {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -47,29 +51,69 @@ export function analyzeImage(file, { onUploadComplete } = {}) {
     xhr.timeout = ANALYZE_TIMEOUT_MS;
     xhr.responseType = "json";
 
-    xhr.upload.onload = () => onUploadComplete?.();
+    let settled = false;
+
+    const cleanup = () => {
+      signal?.removeEventListener("abort", handleSignalAbort);
+    };
+
+    const settle = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback(value);
+    };
+
+    const handleSignalAbort = () => xhr.abort();
+
+    if (signal?.aborted) {
+      settle(
+        reject,
+        new DOMException("The analysis request was cancelled.", "AbortError"),
+      );
+      return;
+    }
+
+    signal?.addEventListener("abort", handleSignalAbort, { once: true });
+
+    xhr.upload.onload = () => {
+      if (!signal?.aborted) onUploadComplete?.();
+    };
 
     xhr.onload = () => {
       const body = xhr.response;
+
       if (xhr.status >= 200 && xhr.status < 300 && body) {
-        resolve(body);
+        settle(resolve, body);
         return;
       }
-      const detail = body && typeof body.detail === "string" ? body.detail : null;
-      reject(new Error(detail || fallbackMessageForStatus(xhr.status)));
+
+      const detail =
+        body && typeof body.detail === "string" ? body.detail : null;
+
+      settle(reject, new Error(detail || fallbackMessageForStatus(xhr.status)));
     };
 
     xhr.onerror = () =>
-      reject(
+      settle(
+        reject,
         new Error(
-          "Couldn't reach the DesignLint server. Check that the backend is running and your connection is working, then try again."
-        )
+          "Couldn't reach the DesignLint server. Check that the backend is running and your connection is working, then try again.",
+        ),
       );
+
     xhr.ontimeout = () =>
-      reject(
+      settle(
+        reject,
         new Error(
-          "The analysis took too long and was stopped. Try again, or use a smaller or simpler screenshot."
-        )
+          "The analysis took too long and was stopped. Try again, or use a smaller or simpler screenshot.",
+        ),
+      );
+
+    xhr.onabort = () =>
+      settle(
+        reject,
+        new DOMException("The analysis request was cancelled.", "AbortError"),
       );
 
     xhr.send(formData);

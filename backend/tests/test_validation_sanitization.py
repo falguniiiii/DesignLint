@@ -37,12 +37,14 @@ def test_negative_coordinates_are_clamped_not_rejected():
     assert result.elements[0].boundingBox.y == 0
 
 
-def test_zero_size_bounding_box_is_clamped_to_minimum():
+def test_zero_size_bounding_box_is_dropped():
     result = validate_extraction(_payload(elements=[
         {"id": "e1", "type": "icon", "boundingBox": {"x": 0, "y": 0, "width": 0, "height": 0}},
+        {"id": "e2", "type": "button", "boundingBox": {"x": 10, "y": 10, "width": 100, "height": 40}},
     ]))
-    assert result.elements[0].boundingBox.width >= 1
-    assert result.elements[0].boundingBox.height >= 1
+
+    assert len(result.elements) == 1
+    assert result.elements[0].id == "e2"
 
 
 def test_element_missing_bounding_box_is_dropped_not_fatal():
@@ -136,3 +138,88 @@ def test_unparseable_json_still_raises_a_clear_error():
         assert False, "should have raised"
     except ExtractionValidationError:
         pass
+
+def test_bounding_box_is_clipped_at_right_edge():
+    result = validate_extraction(_payload(elements=[
+        {"id": "e1", "type": "button", "boundingBox": {
+            "x": 950, "y": 100, "width": 100, "height": 50
+        }},
+    ]))
+
+    bbox = result.elements[0].boundingBox
+    assert bbox.x == 950
+    assert bbox.width == 50
+
+
+def test_bounding_box_is_clipped_at_bottom_edge():
+    result = validate_extraction(_payload(elements=[
+        {"id": "e1", "type": "button", "boundingBox": {
+            "x": 100, "y": 780, "width": 100, "height": 50
+        }},
+    ]))
+
+    bbox = result.elements[0].boundingBox
+    assert bbox.y == 780
+    assert bbox.height == 20
+
+
+def test_negative_coordinates_clip_bounding_box_correctly():
+    result = validate_extraction(_payload(elements=[
+        {"id": "e1", "type": "button", "boundingBox": {
+            "x": -10, "y": -5, "width": 100, "height": 50
+        }},
+    ]))
+
+    bbox = result.elements[0].boundingBox
+    assert bbox.x == 0
+    assert bbox.y == 0
+    assert bbox.width == 90
+    assert bbox.height == 45
+
+
+def test_element_entirely_outside_image_is_dropped():
+    result = validate_extraction(_payload(elements=[
+        {"id": "e1", "type": "button", "boundingBox": {
+            "x": 1100, "y": 100, "width": 100, "height": 50
+        }},
+        {"id": "e2", "type": "button", "boundingBox": {
+            "x": 100, "y": 100, "width": 100, "height": 50
+        }},
+    ]))
+
+    assert len(result.elements) == 1
+    assert result.elements[0].id == "e2"
+
+
+def test_negative_bounding_box_dimensions_are_dropped():
+    result = validate_extraction(_payload(elements=[
+        {"id": "e1", "type": "button", "boundingBox": {
+            "x": 10, "y": 10, "width": -20, "height": 50
+        }},
+        {"id": "e2", "type": "button", "boundingBox": {
+            "x": 10, "y": 10, "width": 50, "height": -20
+        }},
+        {"id": "e3", "type": "button", "boundingBox": {
+            "x": 10, "y": 10, "width": 50, "height": 50
+        }},
+    ]))
+
+    assert len(result.elements) == 1
+    assert result.elements[0].id == "e3"
+
+
+def test_non_finite_bounding_box_values_are_dropped():
+    result = validate_extraction(_payload(elements=[
+        {"id": "e1", "type": "button", "boundingBox": {
+            "x": float("nan"), "y": 10, "width": 50, "height": 50
+        }},
+        {"id": "e2", "type": "button", "boundingBox": {
+            "x": 10, "y": 10, "width": float("inf"), "height": 50
+        }},
+        {"id": "e3", "type": "button", "boundingBox": {
+            "x": 10, "y": 10, "width": 50, "height": 50
+        }},
+    ]))
+
+    assert len(result.elements) == 1
+    assert result.elements[0].id == "e3"

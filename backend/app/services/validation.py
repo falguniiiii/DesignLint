@@ -1,36 +1,33 @@
+
 """
 Validation layer: raw Gemini text -> trusted ExtractionResult, or a clear error.
 
-Gemini can return malformed JSON, missing fields, or nonsensical values
-(a "button" that's 3000px wide, negative coordinates, an unrecognized
-type string, a font size given as a float, etc) - and it can also send
-a genuinely correct FIELD under a differently-formatted KEY name (e.g.
-"font_size" instead of "estimatedFontSize"). The strategy here is:
-normalize key formatting and sanitize what's reasonably fixable, DROP
-the individual element or color that isn't (rather than failing the
-whole analysis over one bad item), and only raise
-ExtractionValidationError for genuinely unrecoverable input (unparseable
-JSON, or no usable structure at all).
+Gemini can return malformed JSON, missing fields, or nonsensical values.
+This module normalizes keys, sanitizes recoverable values, and drops
+individual invalid elements or colors rather than failing the entire
+analysis over one bad item.
+
+Bounding boxes are checked against the screenshot dimensions. Invalid
+geometry is dropped, while partially visible elements are clipped to
+the visible image area.
 
 Nothing past this module should ever have to defend against malformed
-Gemini data again - if a result comes out of `validate_extraction`, it
-is guaranteed to match the schema.
+Gemini data again - if a result comes out of validate_extraction, it is
+guaranteed to match the schema.
 """
+
 import json
+import math
 import re
+
 from pydantic import ValidationError
 
 from app.schemas.extraction import ExtractionResult
 from app.schemas.normalization import remap_keys
 
+
 _HEX_PATTERN = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
-# Canonical key names for each structured object in the schema, plus
-# EXPLICIT aliases for keys that are a genuinely different word/phrasing
-# for the same concept (not just a formatting difference - formatting is
-# handled generically by remap_keys/flatten_key regardless of case,
-# spaces, hyphens, or underscores). Add an entry here only when two
-# names really do mean the same field.
 _TOP_LEVEL_KEYS = {"image", "elements", "colors"}
 _TOP_LEVEL_ALIASES = {
     "colours": "colors",
@@ -41,7 +38,7 @@ _ELEMENT_KEYS = {"id", "type", "label", "boundingBox", "estimatedFontSize"}
 _ELEMENT_ALIASES = {
     "elementid": "id",
     "elementtype": "type",
-    "fontsize": "estimatedFontSize",  # covers "font size" / "font-size" / "Font_Size"
+    "fontsize": "estimatedFontSize",
     "bbox": "boundingBox",
     "box": "boundingBox",
 }
@@ -62,7 +59,7 @@ _IMAGE_KEYS = {"width", "height"}
 
 
 class ExtractionValidationError(Exception):
-    """Raised when Gemini's response cannot be turned into a valid ExtractionResult at all."""
+    """Raised when Gemini's response cannot be turned into a valid ExtractionResult."""
 
 
 def validate_extraction(raw_text: str) -> ExtractionResult:
@@ -80,12 +77,6 @@ def validate_extraction(raw_text: str) -> ExtractionResult:
     try:
         return ExtractionResult.model_validate(sanitized)
     except ValidationError as exc:
-        # Sanitization handles the common cases (bad type strings, float
-        # coordinates, out-of-range font sizes, malformed colors, and
-        # differently-formatted key names). If this still fails, the
-        # response is malformed in a way we can't safely guess our way
-        # around - e.g. the whole payload isn't a JSON object, or "image"
-        # is missing entirely under any recognizable name.
         raise ExtractionValidationError(
             f"Gemini's response did not match the expected structure: {exc}"
         ) from exc
@@ -94,88 +85,224 @@ def validate_extraction(raw_text: str) -> ExtractionResult:
 def _strip_markdown_fences(text: str) -> str:
     """
     Models sometimes wrap JSON in ```json ... ``` even when told not to.
-    Strip that defensively rather than failing on an otherwise-valid response.
+    Strip that defensively rather than failing on otherwise-valid JSON.
     """
     stripped = text.strip()
+
     if stripped.startswith("```"):
         stripped = stripped.strip("`")
+
         if stripped.lower().startswith("json"):
             stripped = stripped[4:]
+
     return stripped.strip()
 
 
 def _sanitize_payload(parsed):
     """
-    Clean the parsed JSON before strict schema validation. Key names are
-    normalized first (formatting only, via remap_keys), then individual
-    malformed elements/colors are dropped rather than failing the entire
-    analysis - a screenshot with 51 good elements and 1 weird one should
-    still produce results for the 51.
+    Clean parsed JSON before strict schema validation.
+
+    Normalize keys first, then sanitize individual elements and colors.
+    Image dimensions are processed before elements so bounding boxes
+    can be checked against the actual screenshot boundaries.
     """
     if not isinstance(parsed, dict):
-        return parsed  # not fixable - let pydantic raise a clear top-level error
+        return parsed
 
     sanitized = remap_keys(parsed, _TOP_LEVEL_KEYS, _TOP_LEVEL_ALIASES)
 
+    raw_image = sanitized.get("image")
+    image_width = None
+    image_height = None
+
+    if isinstance(raw_image, dict):
+        image = remap_keys(raw_image, _IMAGE_KEYS)
+
+        image_width = _positive_integer(image.get("width"))
+        image_height = _positive_integer(image.get("height"))
+
+        if image_width is not None:
+            image["width"] = image_width
+
+        if image_height is not None:
+            image["height"] = image_height
+
+        sanitized["image"] = image
+
     raw_elements = sanitized.get("elements")
+
     sanitized["elements"] = (
         [
-            cleaned for i, el in enumerate(raw_elements)
-            if (cleaned := _sanitize_element(el, i)) is not None
+            cleaned
+            for index, element in enumerate(raw_elements)
+            if (
+                cleaned := _sanitize_element(
+                    element,
+                    index,
+                    image_width,
+                    image_height,
+                )
+            ) is not None
         ]
-        if isinstance(raw_elements, list) else []
+        if isinstance(raw_elements, list)
+        else []
     )
 
     raw_colors = sanitized.get("colors")
-    sanitized["colors"] = (
-        [cleaned for c in raw_colors if (cleaned := _sanitize_color(c)) is not None]
-        if isinstance(raw_colors, list) else []
-    )
 
-    raw_image = sanitized.get("image")
-    if isinstance(raw_image, dict):
-        sanitized["image"] = remap_keys(raw_image, _IMAGE_KEYS)
+    sanitized["colors"] = (
+        [
+            cleaned
+            for color in raw_colors
+            if (cleaned := _sanitize_color(color)) is not None
+        ]
+        if isinstance(raw_colors, list)
+        else []
+    )
 
     return sanitized
 
 
-def _sanitize_element(el, index):
-    """Coerce a single element's fields, or return None to drop it entirely."""
+def _finite_number(value):
+    """Convert a value to a finite float, or return None."""
+    if isinstance(value, bool):
+        return None
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+    return number if math.isfinite(number) else None
+
+
+def _positive_integer(value):
+    """Convert a finite positive dimension to an integer."""
+    number = _finite_number(value)
+
+    if number is None or number <= 0:
+        return None
+
+    rounded = round(number)
+
+    return rounded if rounded > 0 else None
+
+
+def _sanitize_element(
+    el,
+    index,
+    image_width=None,
+    image_height=None,
+):
+    """
+    Sanitize one UI element.
+
+    Invalid geometry is dropped. Valid geometry extending beyond the
+    screenshot is clipped to the visible image area.
+    """
     if not isinstance(el, dict):
         return None
 
     el = remap_keys(el, _ELEMENT_KEYS, _ELEMENT_ALIASES)
 
     bbox = el.get("boundingBox")
+
     if not isinstance(bbox, dict):
-        return None  # no position data - can't meaningfully keep this element
+        return None
 
-    bbox = remap_keys(bbox, _BOUNDING_BOX_KEYS, _BOUNDING_BOX_ALIASES)
+    bbox = remap_keys(
+        bbox,
+        _BOUNDING_BOX_KEYS,
+        _BOUNDING_BOX_ALIASES,
+    )
 
-    try:
-        x = max(0, round(float(bbox.get("x", 0))))
-        y = max(0, round(float(bbox.get("y", 0))))
-        width = max(1, round(float(bbox.get("width", 1))))
-        height = max(1, round(float(bbox.get("height", 1))))
-    except (TypeError, ValueError):
-        return None  # coordinates weren't numeric at all - unrecoverable for this element
+    x_value = _finite_number(bbox.get("x", 0))
+    y_value = _finite_number(bbox.get("y", 0))
+    width_value = _finite_number(bbox.get("width", 1))
+    height_value = _finite_number(bbox.get("height", 1))
 
+    if any(
+        value is None
+        for value in (
+            x_value,
+            y_value,
+            width_value,
+            height_value,
+        )
+    ):
+        return None
+
+    # Zero or negative dimensions do not describe a usable UI element.
+    if width_value <= 0 or height_value <= 0:
+        return None
+
+    x = round(x_value)
+    y = round(y_value)
+    width = round(width_value)
+    height = round(height_value)
+
+    if width <= 0 or height <= 0:
+        return None
+
+    # Calculate the original right and bottom edges.
+    left = max(0, x)
+    top = max(0, y)
+    right = x + width
+    bottom = y + height
+
+    # Clip the bounding box to the screenshot boundaries.
+    if image_width is not None:
+        right = min(right, image_width)
+
+    if image_height is not None:
+        bottom = min(bottom, image_height)
+
+    # Drop elements with no visible area inside the screenshot.
+    if right <= left or bottom <= top:
+        return None
+
+    width = right - left
+    height = bottom - top
+
+    # Sanitize estimated font size independently.
     font_size = el.get("estimatedFontSize")
-    try:
-        font_size = round(float(font_size)) if font_size not in (None, "") else None
-        if font_size is not None and font_size <= 0:
-            font_size = None
-    except (TypeError, ValueError):
+
+    if font_size in (None, ""):
         font_size = None
+    else:
+        font_number = _finite_number(font_size)
+
+        if font_number is None or font_number <= 0:
+            font_size = None
+        else:
+            font_size = round(font_number)
+
+            if font_size <= 0:
+                font_size = None
 
     return {
-        "id": str(el.get("id")) if el.get("id") not in (None, "") else f"element-{index}",
-        # `type` is left as-is (even if missing/weird) - the UIElement
-        # field_validator in extraction.py normalizes synonyms and falls
-        # back to "other" for anything unrecognized.
-        "type": el.get("type") if isinstance(el.get("type"), str) else "other",
-        "label": el.get("label") if isinstance(el.get("label"), str) else None,
-        "boundingBox": {"x": x, "y": y, "width": width, "height": height},
+        "id": (
+            str(el.get("id"))
+            if el.get("id") not in (None, "")
+            else f"element-{index}"
+        ),
+        # UIElement normalizes known synonyms and unknown types.
+        "type": (
+            el.get("type")
+            if isinstance(el.get("type"), str)
+            else "other"
+        ),
+        "label": (
+            el.get("label")
+            if isinstance(el.get("label"), str)
+            else None
+        ),
+        "boundingBox": {
+            "x": left,
+            "y": top,
+            "width": width,
+            "height": height,
+        },
         "estimatedFontSize": font_size,
     }
 
@@ -188,16 +315,21 @@ def _sanitize_color(c):
     c = remap_keys(c, _COLOR_KEYS, _COLOR_ALIASES)
 
     hex_value = c.get("hex")
+
     if not isinstance(hex_value, str):
         return None
 
     value = hex_value.strip()
+
     if not value.startswith("#"):
         value = f"#{value}"
-    if len(value) == 9:  # #RRGGBBAA - drop the alpha channel we don't use
+
+    if len(value) == 9:
+        # #RRGGBBAA - discard the alpha channel we do not use.
         value = value[:7]
+
     if not _HEX_PATTERN.match(value):
-        return None  # genuinely not a hex color - drop rather than guess
+        return None
 
     return {
         "hex": value,

@@ -4,10 +4,13 @@ Spacing rules.
 We deliberately do NOT claim to detect exact spacing values (e.g. "this
 gap is 19px, others are 16px") - a screenshot-derived bounding box isn't
 precise enough to support that. Instead we look at RELATIVE variance
-between gaps among the same element type and flag it only when the
-deviation is large enough to plausibly be a real inconsistency rather
-than measurement noise.
+between gaps among the same element type and within the same vertical
+layout track.
+
+Elements in separate columns or grid tracks are evaluated independently
+so their different spacing systems are not incorrectly compared.
 """
+
 from collections import defaultdict
 
 from app.schemas.extraction import ExtractionResult
@@ -15,6 +18,11 @@ from app.schemas.findings import RawFinding
 
 MIN_ELEMENTS_TO_COMPARE = 3
 RELATIVE_DEVIATION_THRESHOLD = 0.5  # 50% deviation from the average gap
+
+# Elements must overlap horizontally and have a reasonably aligned
+# left, center, or right edge to belong to the same vertical track.
+MIN_HORIZONTAL_OVERLAP_RATIO = 0.5
+MAX_ALIGNMENT_OFFSET_RATIO = 0.25
 
 
 def run(extraction: ExtractionResult) -> list[RawFinding]:
@@ -35,35 +43,162 @@ def run(extraction: ExtractionResult) -> list[RawFinding]:
     return findings
 
 
-def _check_vertical_gap_consistency(element_type: str, elements: list) -> RawFinding | None:
-    elements_sorted = sorted(elements, key=lambda e: e.boundingBox.y)
+def _same_vertical_track(a, b) -> bool:
+    """Return whether two elements share a horizontal layout track."""
+    box_a = a.boundingBox
+    box_b = b.boundingBox
+
+    overlap = max(
+        0,
+        min(box_a.x + box_a.width, box_b.x + box_b.width)
+        - max(box_a.x, box_b.x),
+    )
+
+    narrower_width = min(box_a.width, box_b.width)
+    overlap_ratio = overlap / narrower_width
+
+    if overlap_ratio < MIN_HORIZONTAL_OVERLAP_RATIO:
+        return False
+
+    left_edge_difference = abs(box_a.x - box_b.x)
+
+    center_a = box_a.x + box_a.width / 2
+    center_b = box_b.x + box_b.width / 2
+    center_difference = abs(center_a - center_b)
+
+    right_edge_a = box_a.x + box_a.width
+    right_edge_b = box_b.x + box_b.width
+    right_edge_difference = abs(right_edge_a - right_edge_b)
+
+    closest_alignment = min(
+        left_edge_difference,
+        center_difference,
+        right_edge_difference,
+    )
+
+    return closest_alignment <= narrower_width * MAX_ALIGNMENT_OFFSET_RATIO
+
+
+def _group_into_vertical_tracks(elements: list) -> list[list]:
+    """
+    Group elements into independent vertical tracks.
+
+    Complete-link matching is intentional: an element must align with
+    every existing member of a track. This prevents a wide element from
+    accidentally bridging two otherwise separate columns.
+    """
+    tracks: list[list] = []
+
+    elements_sorted = sorted(
+        elements,
+        key=lambda element: (
+            element.boundingBox.x + element.boundingBox.width / 2,
+            element.boundingBox.y,
+        ),
+    )
+
+    for element in elements_sorted:
+        compatible_tracks = []
+
+        element_center = (
+            element.boundingBox.x + element.boundingBox.width / 2
+        )
+
+        for track in tracks:
+            if all(_same_vertical_track(element, member) for member in track):
+                track_center = sum(
+                    member.boundingBox.x + member.boundingBox.width / 2
+                    for member in track
+                ) / len(track)
+
+                compatible_tracks.append(
+                    (abs(element_center - track_center), track)
+                )
+
+        if compatible_tracks:
+            _, best_track = min(compatible_tracks, key=lambda item: item[0])
+            best_track.append(element)
+        else:
+            tracks.append([element])
+
+    return tracks
+
+
+def _get_vertical_gaps(elements: list) -> tuple[list, list]:
+    """Return non-negative consecutive vertical gaps and sorted elements."""
+    elements_sorted = sorted(
+        elements,
+        key=lambda element: element.boundingBox.y,
+    )
 
     gaps = []
+
     for a, b in zip(elements_sorted, elements_sorted[1:]):
-        gap = b.boundingBox.y - (a.boundingBox.y + a.boundingBox.height)
+        gap = (
+            b.boundingBox.y
+            - (a.boundingBox.y + a.boundingBox.height)
+        )
+
         if gap >= 0:
             gaps.append(gap)
 
-    if len(gaps) < 2:
+    return gaps, elements_sorted
+
+
+def _check_vertical_gap_consistency(
+    element_type: str,
+    elements: list,
+) -> RawFinding | None:
+    inconsistent_tracks = []
+
+    for track in _group_into_vertical_tracks(elements):
+        if len(track) < MIN_ELEMENTS_TO_COMPARE:
+            continue
+
+        gaps, elements_sorted = _get_vertical_gaps(track)
+
+        if len(gaps) < 2:
+            continue
+
+        average_gap = sum(gaps) / len(gaps)
+
+        if average_gap <= 0:
+            continue
+
+        max_deviation = max(abs(gap - average_gap) for gap in gaps)
+
+        if (max_deviation / average_gap) > RELATIVE_DEVIATION_THRESHOLD:
+            inconsistent_tracks.append((gaps, elements_sorted))
+
+    if not inconsistent_tracks:
         return None
 
-    average_gap = sum(gaps) / len(gaps)
-    if average_gap <= 0:
-        return None
+    # Report only the tracks that actually contain inconsistent spacing.
+    inconsistent_gaps = [
+        gap
+        for gaps, _ in inconsistent_tracks
+        for gap in gaps
+    ]
 
-    max_deviation = max(abs(g - average_gap) for g in gaps)
-    if (max_deviation / average_gap) <= RELATIVE_DEVIATION_THRESHOLD:
-        return None
+    related_elements = [
+        element
+        for _, track_elements in inconsistent_tracks
+        for element in track_elements
+    ]
 
     return RawFinding(
         id=f"SPACING-{element_type.upper()}-001",
         category="Spacing",
         severity="minor",
-        title=f"Possible inconsistent spacing between {element_type.replace('_', ' ')} elements",
+        title=(
+            f"Possible inconsistent spacing between "
+            f"{element_type.replace('_', ' ')} elements"
+        ),
         description=(
-            f"Vertical gaps between repeated {element_type.replace('_', ' ')} elements "
-            f"range from about {min(gaps)}px to {max(gaps)}px, which is a noticeable spread."
+            f"Vertical gaps between repeated {element_type.replace('_', ' ')} "
+            f"elements range from about {min(inconsistent_gaps)}px to "
+            f"{max(inconsistent_gaps)}px, which is a noticeable spread."
         ),
         confidence=0.5,
-        relatedElements=[e.id for e in elements_sorted],
+        relatedElements=[element.id for element in related_elements],
     )

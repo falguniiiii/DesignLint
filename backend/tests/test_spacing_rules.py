@@ -126,3 +126,68 @@ def test_only_the_inconsistent_column_is_included_in_the_finding():
         "left-2",
         "left-3",
     }
+
+def test_different_sections_are_not_compared():
+    elements = [
+        make_element("section-a-1", 100, 0),
+        make_element("section-a-2", 100, 40),
+        make_element("section-a-3", 100, 80),
+        make_element("section-b-1", 100, 300),
+        make_element("section-b-2", 100, 400),
+        make_element("section-b-3", 100, 500),
+    ]
+
+    for element in elements[:3]:
+        element.sectionId = "section-a"
+
+    for element in elements[3:]:
+        element.sectionId = "section-b"
+
+    findings = run_spacing_rule(elements)
+
+    assert not any(f.id == "SPACING-BUTTON-001" for f in findings)
+
+
+def test_different_groups_are_not_compared():
+    elements = [
+        make_element("group-a-1", 100, 0),
+        make_element("group-a-2", 100, 40),
+        make_element("group-a-3", 100, 80),
+        make_element("group-b-1", 100, 300),
+        make_element("group-b-2", 100, 400),
+        make_element("group-b-3", 100, 500),
+    ]
+
+    for element in elements[:3]:
+        element.groupId = "group-a"
+
+    for element in elements[3:]:
+        element.groupId = "group-b"
+
+    findings = run_spacing_rule(elements)
+
+    assert not any(f.id == "SPACING-BUTTON-001" for f in findings)
+
+
+def test_overlapping_elements_are_excluded_from_related_elements():
+    elements = [
+        make_element("item-1", 100, 0, height=40),
+        make_element("item-2", 100, 30, height=40),
+        make_element("item-3", 100, 80, height=20),
+        make_element("item-4", 100, 200, height=20),
+    ]
+
+    findings = run_spacing_rule(elements)
+
+    spacing_findings = [
+        finding
+        for finding in findings
+        if finding.id == "SPACING-BUTTON-001"
+    ]
+
+    assert len(spacing_findings) == 1
+    assert spacing_findings[0].relatedElements == [
+        "item-2",
+        "item-3",
+        "item-4",
+    ]

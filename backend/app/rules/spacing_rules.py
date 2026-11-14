@@ -1,14 +1,19 @@
+
 """
 Spacing rules.
 
-We deliberately do NOT claim to detect exact spacing values (e.g. "this
-gap is 19px, others are 16px") - a screenshot-derived bounding box isn't
+We deliberately do NOT claim to detect exact spacing values (e.g. this
+gap is 19px, others are 16px) - a screenshot-derived bounding box isn't
 precise enough to support that. Instead we look at RELATIVE variance
 between gaps among the same element type and within the same vertical
 layout track.
 
 Elements in separate columns or grid tracks are evaluated independently
 so their different spacing systems are not incorrectly compared.
+
+Known structural metadata is used as an additional grouping constraint:
+elements from different known sections or component groups are never
+compared.
 """
 
 from collections import defaultdict
@@ -43,8 +48,35 @@ def run(extraction: ExtractionResult) -> list[RawFinding]:
     return findings
 
 
+def _metadata_compatible(a, b) -> bool:
+    """
+    Prevent comparisons across known, different structural groups.
+
+    Missing metadata does not establish a relationship or a conflict,
+    so geometric matching remains available when metadata is unavailable.
+    """
+    if (
+        a.sectionId is not None
+        and b.sectionId is not None
+        and a.sectionId != b.sectionId
+    ):
+        return False
+
+    if (
+        a.groupId is not None
+        and b.groupId is not None
+        and a.groupId != b.groupId
+    ):
+        return False
+
+    return True
+
+
 def _same_vertical_track(a, b) -> bool:
     """Return whether two elements share a horizontal layout track."""
+    if not _metadata_compatible(a, b):
+        return False
+
     box_a = a.boundingBox
     box_b = b.boundingBox
 
@@ -116,7 +148,10 @@ def _group_into_vertical_tracks(elements: list) -> list[list]:
                 )
 
         if compatible_tracks:
-            _, best_track = min(compatible_tracks, key=lambda item: item[0])
+            _, best_track = min(
+                compatible_tracks,
+                key=lambda item: item[0],
+            )
             best_track.append(element)
         else:
             tracks.append([element])
@@ -125,13 +160,15 @@ def _group_into_vertical_tracks(elements: list) -> list[list]:
 
 
 def _get_vertical_gaps(elements: list) -> tuple[list, list]:
-    """Return non-negative consecutive vertical gaps and sorted elements."""
+    """Return valid consecutive gaps and the elements participating in them."""
     elements_sorted = sorted(
         elements,
         key=lambda element: element.boundingBox.y,
     )
 
     gaps = []
+    participating_elements = []
+    seen_ids = set()
 
     for a, b in zip(elements_sorted, elements_sorted[1:]):
         gap = (
@@ -142,7 +179,12 @@ def _get_vertical_gaps(elements: list) -> tuple[list, list]:
         if gap >= 0:
             gaps.append(gap)
 
-    return gaps, elements_sorted
+            for element in (a, b):
+                if element.id not in seen_ids:
+                    participating_elements.append(element)
+                    seen_ids.add(element.id)
+
+    return gaps, participating_elements
 
 
 def _check_vertical_gap_consistency(
@@ -155,7 +197,7 @@ def _check_vertical_gap_consistency(
         if len(track) < MIN_ELEMENTS_TO_COMPARE:
             continue
 
-        gaps, elements_sorted = _get_vertical_gaps(track)
+        gaps, participating_elements = _get_vertical_gaps(track)
 
         if len(gaps) < 2:
             continue
@@ -165,15 +207,19 @@ def _check_vertical_gap_consistency(
         if average_gap <= 0:
             continue
 
-        max_deviation = max(abs(gap - average_gap) for gap in gaps)
+        max_deviation = max(
+            abs(gap - average_gap)
+            for gap in gaps
+        )
 
         if (max_deviation / average_gap) > RELATIVE_DEVIATION_THRESHOLD:
-            inconsistent_tracks.append((gaps, elements_sorted))
+            inconsistent_tracks.append((gaps, participating_elements))
 
     if not inconsistent_tracks:
         return None
 
-    # Report only the tracks that actually contain inconsistent spacing.
+    # Report only gaps and elements from tracks that actually contain
+    # inconsistent spacing.
     inconsistent_gaps = [
         gap
         for gaps, _ in inconsistent_tracks

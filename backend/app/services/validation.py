@@ -4,16 +4,10 @@ Validation layer: raw Gemini text -> trusted ExtractionResult, or a clear error.
 
 Gemini can return malformed JSON, missing fields, or nonsensical values.
 This module normalizes keys, sanitizes recoverable values, and drops
-individual invalid elements or colors rather than failing the entire
-analysis over one bad item.
+individual invalid elements, sections, or colors.
 
-Bounding boxes are checked against the screenshot dimensions. Invalid
-geometry is dropped, while partially visible elements are clipped to
-the visible image area.
-
-Nothing past this module should ever have to defend against malformed
-Gemini data again - if a result comes out of validate_extraction, it is
-guaranteed to match the schema.
+Bounding boxes are checked against screenshot dimensions. Invalid geometry
+is dropped, while partially visible geometry is clipped to the image area.
 """
 
 import json
@@ -28,17 +22,38 @@ from app.schemas.normalization import remap_keys
 
 _HEX_PATTERN = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
-_TOP_LEVEL_KEYS = {"image", "elements", "colors"}
+_TOP_LEVEL_KEYS = {"image", "elements", "colors", "sections"}
 _TOP_LEVEL_ALIASES = {
     "colours": "colors",
     "uielements": "elements",
 }
 
-_ELEMENT_KEYS = {"id", "type", "label", "boundingBox", "estimatedFontSize"}
+_ELEMENT_KEYS = {
+    "id",
+    "type",
+    "label",
+    "boundingBox",
+    "estimatedFontSize",
+    "role",
+    "sectionId",
+    "groupId",
+}
+
 _ELEMENT_ALIASES = {
     "elementid": "id",
     "elementtype": "type",
     "fontsize": "estimatedFontSize",
+    "bbox": "boundingBox",
+    "box": "boundingBox",
+    "sectionid": "sectionId",
+    "groupid": "groupId",
+}
+
+_SECTION_KEYS = {"id", "type", "label", "boundingBox"}
+
+_SECTION_ALIASES = {
+    "sectionid": "id",
+    "sectiontype": "type",
     "bbox": "boundingBox",
     "box": "boundingBox",
 }
@@ -83,10 +98,7 @@ def validate_extraction(raw_text: str) -> ExtractionResult:
 
 
 def _strip_markdown_fences(text: str) -> str:
-    """
-    Models sometimes wrap JSON in ```json ... ``` even when told not to.
-    Strip that defensively rather than failing on otherwise-valid JSON.
-    """
+    """Remove Markdown code fences around otherwise-valid JSON."""
     stripped = text.strip()
 
     if stripped.startswith("```"):
@@ -100,11 +112,10 @@ def _strip_markdown_fences(text: str) -> str:
 
 def _sanitize_payload(parsed):
     """
-    Clean parsed JSON before strict schema validation.
+    Normalize and sanitize the complete extraction payload.
 
-    Normalize keys first, then sanitize individual elements and colors.
-    Image dimensions are processed before elements so bounding boxes
-    can be checked against the actual screenshot boundaries.
+    Sections are sanitized before element references are checked, so
+    elements can only reference sections that actually survived validation.
     """
     if not isinstance(parsed, dict):
         return parsed
@@ -129,6 +140,38 @@ def _sanitize_payload(parsed):
 
         sanitized["image"] = image
 
+    raw_sections = sanitized.get("sections")
+
+    sanitized_sections = (
+        [
+            cleaned
+            for index, section in enumerate(raw_sections)
+            if (
+                cleaned := _sanitize_section(
+                    section,
+                    index,
+                    image_width,
+                    image_height,
+                )
+            ) is not None
+        ]
+        if isinstance(raw_sections, list)
+        else []
+    )
+
+    # Keep the first occurrence of each section ID.
+    unique_sections = []
+    section_ids = set()
+
+    for section in sanitized_sections:
+        if section["id"] in section_ids:
+            continue
+
+        section_ids.add(section["id"])
+        unique_sections.append(section)
+
+    sanitized["sections"] = unique_sections
+
     raw_elements = sanitized.get("elements")
 
     sanitized["elements"] = (
@@ -147,6 +190,13 @@ def _sanitize_payload(parsed):
         if isinstance(raw_elements, list)
         else []
     )
+
+    # Remove references to sections that did not survive sanitization.
+    for element in sanitized["elements"]:
+        section_id = element.get("sectionId")
+
+        if section_id not in section_ids:
+            element["sectionId"] = None
 
     raw_colors = sanitized.get("colors")
 
@@ -232,7 +282,6 @@ def _sanitize_element(
     ):
         return None
 
-    # Zero or negative dimensions do not describe a usable UI element.
     if width_value <= 0 or height_value <= 0:
         return None
 
@@ -244,27 +293,23 @@ def _sanitize_element(
     if width <= 0 or height <= 0:
         return None
 
-    # Calculate the original right and bottom edges.
     left = max(0, x)
     top = max(0, y)
     right = x + width
     bottom = y + height
 
-    # Clip the bounding box to the screenshot boundaries.
     if image_width is not None:
         right = min(right, image_width)
 
     if image_height is not None:
         bottom = min(bottom, image_height)
 
-    # Drop elements with no visible area inside the screenshot.
     if right <= left or bottom <= top:
         return None
 
     width = right - left
     height = bottom - top
 
-    # Sanitize estimated font size independently.
     font_size = el.get("estimatedFontSize")
 
     if font_size in (None, ""):
@@ -280,13 +325,24 @@ def _sanitize_element(
             if font_size <= 0:
                 font_size = None
 
+    role = el.get("role")
+    if not isinstance(role, str) or not role.strip():
+        role = None
+
+    section_id = el.get("sectionId")
+    if not isinstance(section_id, str) or not section_id.strip():
+        section_id = None
+
+    group_id = el.get("groupId")
+    if not isinstance(group_id, str) or not group_id.strip():
+        group_id = None
+
     return {
         "id": (
             str(el.get("id"))
             if el.get("id") not in (None, "")
             else f"element-{index}"
         ),
-        # UIElement normalizes known synonyms and unknown types.
         "type": (
             el.get("type")
             if isinstance(el.get("type"), str)
@@ -304,6 +360,56 @@ def _sanitize_element(
             "height": height,
         },
         "estimatedFontSize": font_size,
+        "role": role,
+        "sectionId": section_id,
+        "groupId": group_id,
+    }
+
+
+def _sanitize_section(
+    section,
+    index,
+    image_width=None,
+    image_height=None,
+):
+    """Sanitize one section using the existing bounding-box rules."""
+    if not isinstance(section, dict):
+        return None
+
+    section = remap_keys(
+        section,
+        _SECTION_KEYS,
+        _SECTION_ALIASES,
+    )
+
+    cleaned = _sanitize_element(
+        {
+            "id": section.get("id"),
+            "type": "container",
+            "label": section.get("label"),
+            "boundingBox": section.get("boundingBox"),
+        },
+        index,
+        image_width,
+        image_height,
+    )
+
+    if cleaned is None:
+        return None
+
+    return {
+        "id": cleaned["id"],
+        "type": (
+            section.get("type")
+            if isinstance(section.get("type"), str)
+            else "other"
+        ),
+        "label": (
+            section.get("label")
+            if isinstance(section.get("label"), str)
+            else None
+        ),
+        "boundingBox": cleaned["boundingBox"],
     }
 
 
@@ -325,7 +431,6 @@ def _sanitize_color(c):
         value = f"#{value}"
 
     if len(value) == 9:
-        # #RRGGBBAA - discard the alpha channel we do not use.
         value = value[:7]
 
     if not _HEX_PATTERN.match(value):

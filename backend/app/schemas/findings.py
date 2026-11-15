@@ -1,9 +1,10 @@
 """
 Structures produced by the rule engine (app/rules/*) and the
 recommendation layer (app/services/recommendations.py). Nothing in here
-comes from Gemini - these are 100% DesignLint's own judgments, computed
-from the validated ExtractionResult.
+comes from Gemini - these are DesignLint's own judgments and suggestions,
+computed from the validated ExtractionResult.
 """
+
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
@@ -15,22 +16,15 @@ Category = Literal["Color", "Typography", "Spacing", "Consistency"]
 
 class ColorSuggestion(BaseModel):
     """One entry in a suggested color palette."""
-    role: str   # e.g. "Primary", "Background", "Secondary text"
+    role: str
     hex: str
-    usage: str  # brief plain-language explanation of where to use it
-    # "detected": taken directly from a color found in the screenshot.
-    # "derived": computed by DesignLint from detected colors (e.g. lightness
-    # adjusted for contrast). Lets the UI tell the two apart without
-    # parsing the usage text.
+    usage: str
     source: Literal["detected", "derived"] = "derived"
 
 
 class Recommendation(BaseModel):
     """
-    Structured, actionable guidance attached to a finding - built by the
-    recommendation layer, never by the rule engine itself. Kept as
-    separate fields (not one paragraph) so the frontend can render each
-    part distinctly.
+    Structured, actionable guidance attached to a finding.
     """
     whyItMatters: str
     fix: str
@@ -40,12 +34,8 @@ class Recommendation(BaseModel):
 
 class RawFinding(BaseModel):
     """
-    Produced directly by the rule engine (app/rules/*): the raw detection
-    signal only - what was found, how severe, how confident, and which
-    elements it relates to. Does NOT include actionable guidance; that's
-    added afterward by the recommendation layer, turning a RawFinding
-    into a Finding. Keeping these separate means detection logic never
-    needs to know or care how its output will be explained to the user.
+    Produced directly by the rule engine. Contains detection evidence,
+    not user-facing recommendation text.
     """
     id: str
     category: Category
@@ -58,7 +48,7 @@ class RawFinding(BaseModel):
 
 
 class Finding(BaseModel):
-    """A RawFinding plus the structured, actionable Recommendation built for it."""
+    """A RawFinding plus its structured recommendation."""
     id: str
     category: Category
     severity: Severity
@@ -76,9 +66,8 @@ class CategoryScore(BaseModel):
 
 class ElementRef(BaseModel):
     """
-    Minimal element info needed to position an annotation marker on the
-    screenshot - the same bounding box data Gemini returned, carried
-    through purely so the frontend can draw markers. Not a new judgment.
+    Minimal element information needed to position annotations
+    on the uploaded screenshot.
     """
     id: str
     type: str
@@ -89,6 +78,10 @@ class AuditResult(BaseModel):
     overallScore: int = Field(ge=0, le=100)
     categoryScores: list[CategoryScore]
     findings: list[Finding]
+
+    # Palette guidance is independent of whether any finding exists.
+    palette: list[ColorSuggestion] = Field(default_factory=list)
+
     elementCount: int
     image: ImageMeta
     elements: list[ElementRef]

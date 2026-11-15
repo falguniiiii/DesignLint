@@ -35,16 +35,19 @@ def test_clean_design_has_no_findings_and_scores_100():
     assert overall == 100
 
 
-def test_too_many_colors_triggers_color_finding():
+def test_color_count_alone_does_not_trigger_color_finding():
     result = ExtractionResult(
         image=ImageMeta(width=1000, height=800),
-        colors=[DominantColor(hex=c) for c in
-                ["#111", "#222", "#333", "#444", "#555", "#666"]],
+        colors=[
+            DominantColor(hex=c)
+            for c in ["#111", "#222", "#333", "#444", "#555", "#666"]
+        ],
         elements=[],
     )
-    findings = run_rule_engine(result)
-    assert any(f.category == "Color" for f in findings)
 
+    findings = run_rule_engine(result)
+
+    assert not any(f.category == "Color" for f in findings)
 
 def test_small_text_triggers_major_typography_finding():
     result = ExtractionResult(

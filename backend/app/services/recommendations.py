@@ -271,6 +271,14 @@ def _derive_palette(colors: list) -> list[ColorSuggestion] | None:
     ))
     return palette
 
+def build_palette(extraction: ExtractionResult) -> list[ColorSuggestion]:
+    """
+    Build palette guidance independently of audit findings.
+
+    Return an empty list when the extraction does not contain enough
+    reliable color information to derive a palette.
+    """
+    return _derive_palette(extraction.colors) or []
 
 def _source_of(note: str) -> str:
     """The notes above start with "Taken as detected." or "Derived ..."."""

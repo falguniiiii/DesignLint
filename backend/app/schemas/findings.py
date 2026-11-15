@@ -54,6 +54,7 @@ class RawFinding(BaseModel):
     description: str
     confidence: float = Field(ge=0, le=1)
     relatedElements: list[str] = Field(default_factory=list)
+    spacingGaps: Optional[list[float]] = Field(default=None, exclude=True)
 
 
 class Finding(BaseModel):

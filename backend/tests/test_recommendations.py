@@ -10,6 +10,7 @@ twice always produces the exact same output.
 from app.schemas.extraction import ExtractionResult, UIElement, BoundingBox, DominantColor, ImageMeta
 from app.schemas.findings import RawFinding, Recommendation
 from app.services.recommendations import enrich_findings, _derive_palette
+from app.rules.spacing_rules import run as run_spacing_rules
 
 
 def _el(id, type, x, y, w, h, font=None):
@@ -109,6 +110,33 @@ def test_spacing_recommendation_suggests_a_value_from_the_standard_scale():
     from app.services.recommendations import SPACING_SCALE
     assert any(str(v) in suggested for v in SPACING_SCALE)
 
+def test_spacing_recommendation_preserves_measurements_across_separate_tracks():
+    extraction = _extraction(elements=[
+        # Left column: gaps are 16px and 64px.
+        _el("left_1", "card", 0, 0, 100, 50),
+        _el("left_2", "card", 0, 66, 100, 50),
+        _el("left_3", "card", 0, 180, 100, 50),
+
+        # Right column: same gaps, independent vertical track.
+        _el("right_1", "card", 300, 10, 100, 50),
+        _el("right_2", "card", 300, 76, 100, 50),
+        _el("right_3", "card", 300, 190, 100, 50),
+    ])
+
+    raw_findings = run_spacing_rules(extraction)
+
+    spacing_finding = next(
+        finding
+        for finding in raw_findings
+        if finding.id == "SPACING-CARD-001"
+    )
+
+    enriched = enrich_findings([spacing_finding], extraction)
+
+    recommendation = enriched[0].recommendation.suggestedValue
+
+    assert "16px to 64px" in spacing_finding.description
+    assert "16px to 64px" in recommendation
 
 # --- Color palette: deterministic, grounded in extracted colors, never random ---
 

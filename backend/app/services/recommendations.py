@@ -498,20 +498,19 @@ def _closest_scale_value(value: float) -> int:
 
 
 def _spacing_recommendation(finding: RawFinding, elements_by_id: dict) -> Recommendation:
-    elements = [elements_by_id[eid] for eid in finding.relatedElements if eid in elements_by_id]
-    elements_sorted = sorted(elements, key=lambda e: e.boundingBox.y)
-
-    gaps = []
-    for a, b in zip(elements_sorted, elements_sorted[1:]):
-        gap = b.boundingBox.y - (a.boundingBox.y + a.boundingBox.height)
-        if gap >= 0:
-            gaps.append(gap)
+    gaps = finding.spacingGaps or []
 
     if gaps:
         suggested_value = _closest_scale_value(sum(gaps) / len(gaps))
-        suggested = f"Use {suggested_value}px between each of these elements (currently ranging from {min(gaps)}px to {max(gaps)}px)."
+        suggested = (
+            f"Use {suggested_value}px between each of these elements "
+            f"(currently ranging from {min(gaps):g}px to {max(gaps):g}px)."
+        )
     else:
-        suggested = "Pick one spacing value (for example 16px or 24px) and use it consistently between these elements."
+        suggested = (
+            "Pick one spacing value (for example 16px or 24px) "
+            "and use it consistently between these elements."
+        )
 
     return Recommendation(
         whyItMatters=(

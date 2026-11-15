@@ -1,4 +1,3 @@
-
 """
 Spacing rules.
 
@@ -247,4 +246,5 @@ def _check_vertical_gap_consistency(
         ),
         confidence=0.5,
         relatedElements=[element.id for element in related_elements],
+        spacingGaps=inconsistent_gaps,
     )

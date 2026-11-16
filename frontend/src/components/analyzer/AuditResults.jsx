@@ -1,10 +1,3 @@
-// Renders the structured Recommendation object the backend now attaches
-// to every finding: why it matters, what to change, a concrete suggested
-// value, and (for color findings) a derived palette. Kept as distinct
-// labeled sections rather than one paragraph, matching the backend's
-// structure 1:1. Also supports click-to-highlight against the screenshot
-// annotations (activeFindingId / onFindingClick).
-
 const SEVERITY_LABEL = {
   major: "Major",
   minor: "Minor",
@@ -28,13 +21,16 @@ function PaletteSwatches({ palette }) {
           />
           <div className="palette-swatches__text">
             <span className="palette-swatches__role">
-              {c.role} <span className="audit-results__mono">{c.hex}</span>
+              {c.role}{" "}
+              <span className="audit-results__mono">{c.hex}</span>
             </span>
+
             <span
               className={`palette-swatches__source palette-swatches__source--${c.source || "derived"}`}
             >
               {SOURCE_LABEL[c.source] || SOURCE_LABEL.derived}
             </span>
+
             <span className="palette-swatches__usage">{c.usage}</span>
           </div>
         </li>
@@ -48,7 +44,12 @@ export default function AuditResults({
   activeFindingId,
   onFindingClick,
 }) {
-  const { overallScore, categoryScores, findings } = audit;
+  const {
+    overallScore,
+    categoryScores,
+    findings,
+    palette = [],
+  } = audit;
 
   return (
     <div className="audit-results">
@@ -56,21 +57,31 @@ export default function AuditResults({
 
       <div className="audit-results__overview">
         <div className="audit-results__score">
-          <span className="audit-results__score-value">{overallScore}</span>
+          <span className="audit-results__score-value">
+            {overallScore}
+          </span>
           <span className="audit-results__score-max">/100</span>
         </div>
+
         <p className="audit-results__score-explainer">
-          Each category starts at 100 and loses points for every finding (major
-          −10, minor −5, suggestion −2). The overall score averages the four
-          categories. It reflects the patterns DesignLint's rules can check, not
-          a full design review.
+          Each category starts at 100 and loses points for every finding
+          (major −10, minor −5, suggestion −2). The overall score
+          averages the four categories. It reflects the patterns
+          DesignLint's rules can check, not a full design review.
         </p>
 
-        <h3 className="audit-results__subheading">Category scores</h3>
+        <h3 className="audit-results__subheading">
+          Category scores
+        </h3>
+
         <ul className="audit-results__categories">
           {categoryScores.map((c) => (
-            <li key={c.category} className="audit-results__category">
+            <li
+              key={c.category}
+              className="audit-results__category"
+            >
               <span>{c.category}</span>
+
               <span
                 className="audit-results__bar"
                 role="img"
@@ -81,20 +92,41 @@ export default function AuditResults({
                   style={{ width: `${c.score}%` }}
                 />
               </span>
-              <span className="audit-results__mono">{c.score}</span>
+
+              <span className="audit-results__mono">
+                {c.score}
+              </span>
             </li>
           ))}
         </ul>
       </div>
 
+      {palette.length > 0 && (
+        <section
+          className="audit-results__palette"
+          aria-labelledby="audit-results-palette-heading"
+        >
+          <h3 id="audit-results-palette-heading">
+            Suggested palette
+          </h3>
+
+          <p className="audit-results__palette-description">
+            Colors detected in your screenshot and additional
+            colors derived by DesignLint.
+          </p>
+
+          <PaletteSwatches palette={palette} />
+        </section>
+      )}
+
       <h3>Findings ({findings.length})</h3>
 
       {findings.length === 0 && (
         <p className="audit-results__empty">
-          No issues were flagged by DesignLint's current rules. That's a good
-          sign, but it doesn't guarantee the design is perfect — the rules only
-          check a limited set of patterns (color count, contrast, type sizes,
-          spacing and consistency).
+          No issues were flagged by DesignLint's current rules.
+          That's a good sign, but it doesn't guarantee the design
+          is perfect. The rules check a limited set of patterns,
+          including contrast, typography, spacing and consistency.
         </p>
       )}
 
@@ -110,21 +142,31 @@ export default function AuditResults({
           >
             <div className="finding__header">
               {f.relatedElements.length > 0 && (
-                <span className="finding__number">{index + 1}</span>
+                <span className="finding__number">
+                  {index + 1}
+                </span>
               )}
+
               <span
                 className={`finding__severity finding__severity--${f.severity}`}
               >
                 {SEVERITY_LABEL[f.severity]}
               </span>
-              <span className="finding__category">{f.category}</span>
+
+              <span className="finding__category">
+                {f.category}
+              </span>
+
               <span className="finding__confidence">
                 {Math.round(f.confidence * 100)}% confidence
               </span>
             </div>
 
             <h4 className="finding__title">{f.title}</h4>
-            <p className="finding__description">{f.description}</p>
+
+            <p className="finding__description">
+              {f.description}
+            </p>
 
             {f.relatedElements.length > 0 && (
               <button
@@ -151,30 +193,30 @@ export default function AuditResults({
               </summary>
 
               <div className="finding__section">
-                <span className="finding__section-label">Why it matters</span>
+                <span className="finding__section-label">
+                  Why it matters
+                </span>
+
                 <p className="finding__section-body">
                   {f.recommendation.whyItMatters}
                 </p>
               </div>
 
               <div className="finding__section">
-                <span className="finding__section-label">Try this</span>
-                <p className="finding__section-body">{f.recommendation.fix}</p>
+                <span className="finding__section-label">
+                  Try this
+                </span>
+
+                <p className="finding__section-body">
+                  {f.recommendation.fix}
+                </p>
+
                 {f.recommendation.suggestedValue && (
                   <p className="finding__suggested-value">
                     {f.recommendation.suggestedValue}
                   </p>
                 )}
               </div>
-
-              {f.recommendation.palette && (
-                <div className="finding__section">
-                  <span className="finding__section-label">
-                    Suggested palette
-                  </span>
-                  <PaletteSwatches palette={f.recommendation.palette} />
-                </div>
-              )}
             </details>
           </li>
         ))}

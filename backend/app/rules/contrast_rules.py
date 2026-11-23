@@ -1,71 +1,86 @@
 """
 Contrast rule.
 
-Checks contrast between colors Gemini labeled as text-like and colors
-labeled as background-like, using the actual WCAG 2.x contrast-ratio
-formula (app/services/color_utils.py) - never a guess based on raw RGB
-brightness. This rule only runs when the extracted colors give us a
-role-labeled text/background pair to compare; if Gemini didn't label
-any colors that way, it produces no finding rather than guessing which
-extracted colors are "the text" and "the background" - matching the
-project's rule of not inventing data we don't actually have.
+Evaluates only explicit foreground/background pairs extracted for
+specific UI elements. It never constructs pairs from dominant colors.
 
-We check against the WCAG AA "normal text" threshold (4.5:1) since we
-don't have per-element font size tied to these page-level dominant
-colors, so we can't reliably apply the "large text" exception (3:1).
-That's a real limitation, so it's a threshold check, not a claim of
-full WCAG compliance for any specific piece of text.
+Gemini identifies the visual relationship; this rule calculates the
+WCAG contrast ratio and applies deterministic thresholds.
 """
+
 from app.schemas.extraction import ExtractionResult
 from app.schemas.findings import RawFinding
 from app.services.color_utils import contrast_ratio
+
 
 WCAG_AA_NORMAL_TEXT_RATIO = 4.5
 LOW_CONTRAST_MAJOR_THRESHOLD = 3.0
 
 
 def run(extraction: ExtractionResult) -> list[RawFinding]:
-    text_colors = [c for c in extraction.colors if c.role and "text" in c.role.lower()]
-    background_colors = [c for c in extraction.colors if c.role and "background" in c.role.lower()]
-
-    if not text_colors or not background_colors:
-        return []  # not enough role-labeled data to reliably identify a text/background pair
+    elements_by_id = {
+        element.id: element
+        for element in extraction.elements
+    }
 
     findings: list[RawFinding] = []
-    seen_pairs = set()
+    seen_pairs: set[tuple[str, str, str]] = set()
 
-    for text_color in text_colors:
-        for bg_color in background_colors:
-            if text_color.hex == bg_color.hex:
-                continue
-            pair_key = (text_color.hex, bg_color.hex)
-            if pair_key in seen_pairs:
-                continue
-            seen_pairs.add(pair_key)
+    for pair in extraction.contrastPairs:
+        element = elements_by_id.get(pair.elementId)
 
-            ratio = contrast_ratio(text_color.hex, bg_color.hex)
-            if ratio >= WCAG_AA_NORMAL_TEXT_RATIO:
-                continue  # meets the threshold - not a finding
+        # Never evaluate a pair without a matching extracted element.
+        if element is None:
+            continue
 
-            severity = "major" if ratio < LOW_CONTRAST_MAJOR_THRESHOLD else "minor"
-            role_label = text_color.role or "text"
-            bg_label = bg_color.role or "background"
+        foreground = pair.foregroundColor.lower()
+        background = pair.backgroundColor.lower()
 
-            findings.append(
-                RawFinding(
-                    id=f"CONTRAST-{text_color.hex.lstrip('#').upper()}-{bg_color.hex.lstrip('#').upper()}",
-                    category="Color",
-                    severity=severity,
-                    title=f"Weak contrast for {role_label}",
-                    description=(
-                        f"The contrast ratio between the {role_label} color ({text_color.hex}) "
-                        f"and the {bg_label} color ({bg_color.hex}) is about {ratio:.1f}:1, which "
-                        f"is below the commonly recommended minimum of {WCAG_AA_NORMAL_TEXT_RATIO}:1 "
-                        "for normal text (WCAG AA)."
-                    ),
-                    confidence=0.6,
-                    relatedElements=[],
-                )
+        pair_key = (pair.elementId, foreground, background)
+
+        if pair_key in seen_pairs:
+            continue
+
+        seen_pairs.add(pair_key)
+
+        ratio = contrast_ratio(foreground, background)
+
+        if ratio >= WCAG_AA_NORMAL_TEXT_RATIO:
+            continue
+
+        severity = (
+            "major"
+            if ratio < LOW_CONTRAST_MAJOR_THRESHOLD
+            else "minor"
+        )
+
+        element_label = (
+            element.label
+            or element.role
+            or element.type
+        )
+
+        findings.append(
+            RawFinding(
+                id=(
+                    f"CONTRAST-{pair.elementId}-"
+                    f"{foreground.lstrip('#').upper()}-"
+                    f"{background.lstrip('#').upper()}"
+                ),
+                category="Color",
+                severity=severity,
+                title=f"Weak contrast for {element_label}",
+                description=(
+                    f"The text associated with the {element_label} element "
+                    f"has a foreground color ({foreground}) against its "
+                    f"background ({background}), producing a contrast ratio "
+                    f"of {ratio:.2f}:1. This is below the WCAG AA "
+                    f"normal-text threshold of "
+                    f"{WCAG_AA_NORMAL_TEXT_RATIO}:1."
+                ),
+                confidence=0.6,
+                relatedElements=[pair.elementId],
             )
+        )
 
     return findings

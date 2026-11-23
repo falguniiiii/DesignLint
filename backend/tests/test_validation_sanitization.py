@@ -11,11 +11,12 @@ import json
 from app.services.validation import validate_extraction, ExtractionValidationError
 
 
-def _payload(elements=None, colors=None, image=None):
+def _payload(elements=None, colors=None, image=None, contrast_pairs=None):
     return json.dumps({
         "image": image or {"width": 1000, "height": 800},
         "elements": elements or [],
         "colors": colors or [],
+        "contrastPairs": contrast_pairs or [],
     })
 
 
@@ -223,3 +224,111 @@ def test_non_finite_bounding_box_values_are_dropped():
 
     assert len(result.elements) == 1
     assert result.elements[0].id == "e3"
+
+def test_valid_contrast_pair_is_preserved():
+    result = validate_extraction(_payload(
+        elements=[
+            {
+                "id": "heading-1",
+                "type": "heading",
+                "boundingBox": {
+                    "x": 10,
+                    "y": 10,
+                    "width": 300,
+                    "height": 40,
+                },
+            }
+        ],
+        contrast_pairs=[
+            {
+                "elementId": "heading-1",
+                "foregroundColor": "#333333",
+                "backgroundColor": "#FFFFFF",
+            }
+        ],
+    ))
+
+    assert len(result.contrastPairs) == 1
+
+    pair = result.contrastPairs[0]
+    assert pair.elementId == "heading-1"
+    assert pair.foregroundColor == "#333333"
+    assert pair.backgroundColor == "#ffffff"
+
+
+def test_contrast_pair_with_unknown_element_is_dropped():
+    result = validate_extraction(_payload(
+        contrast_pairs=[
+            {
+                "elementId": "missing-element",
+                "foregroundColor": "#333333",
+                "backgroundColor": "#FFFFFF",
+            }
+        ],
+    ))
+
+    assert result.contrastPairs == []
+
+
+def test_contrast_pair_with_invalid_color_is_dropped():
+    result = validate_extraction(_payload(
+        elements=[
+            {
+                "id": "heading-1",
+                "type": "heading",
+                "boundingBox": {
+                    "x": 10,
+                    "y": 10,
+                    "width": 300,
+                    "height": 40,
+                },
+            }
+        ],
+        contrast_pairs=[
+            {
+                "elementId": "heading-1",
+                "foregroundColor": "rgb(30, 30, 30)",
+                "backgroundColor": "#FFFFFF",
+            }
+        ],
+    ))
+
+    assert result.contrastPairs == []
+
+
+def test_malformed_contrast_pair_does_not_discard_valid_pairs():
+    result = validate_extraction(_payload(
+        elements=[
+            {
+                "id": "heading-1",
+                "type": "heading",
+                "boundingBox": {
+                    "x": 10,
+                    "y": 10,
+                    "width": 300,
+                    "height": 40,
+                },
+            }
+        ],
+        contrast_pairs=[
+            "not-an-object",
+            {
+                "elementId": "heading-1",
+                "foregroundColor": "#333333",
+                "backgroundColor": "#FFFFFF",
+            },
+        ],
+    ))
+
+    assert len(result.contrastPairs) == 1
+    assert result.contrastPairs[0].elementId == "heading-1"
+
+
+def test_old_payload_without_contrast_pairs_remains_valid():
+    result = validate_extraction(json.dumps({
+        "image": {"width": 1000, "height": 800},
+        "elements": [],
+        "colors": [],
+    }))
+
+    assert result.contrastPairs == []

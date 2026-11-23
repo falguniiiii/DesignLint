@@ -4,7 +4,7 @@ Validation layer: raw Gemini text -> trusted ExtractionResult, or a clear error.
 
 Gemini can return malformed JSON, missing fields, or nonsensical values.
 This module normalizes keys, sanitizes recoverable values, and drops
-individual invalid elements, sections, or colors.
+individual invalid elements, sections, colors, or contrast pairs.
 
 Bounding boxes are checked against screenshot dimensions. Invalid geometry
 is dropped, while partially visible geometry is clipped to the image area.
@@ -22,7 +22,14 @@ from app.schemas.normalization import remap_keys
 
 _HEX_PATTERN = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
-_TOP_LEVEL_KEYS = {"image", "elements", "colors", "sections"}
+_TOP_LEVEL_KEYS = {
+    "image",
+    "elements",
+    "colors",
+    "sections",
+    "contrastPairs",
+}
+
 _TOP_LEVEL_ALIASES = {
     "colours": "colors",
     "uielements": "elements",
@@ -59,15 +66,23 @@ _SECTION_ALIASES = {
 }
 
 _BOUNDING_BOX_KEYS = {"x", "y", "width", "height"}
+
 _BOUNDING_BOX_ALIASES = {
     "w": "width",
     "h": "height",
 }
 
 _COLOR_KEYS = {"hex", "role"}
+
 _COLOR_ALIASES = {
     "color": "hex",
     "colour": "hex",
+}
+
+_CONTRAST_PAIR_KEYS = {
+    "elementId",
+    "foregroundColor",
+    "backgroundColor",
 }
 
 _IMAGE_KEYS = {"width", "height"}
@@ -120,7 +135,11 @@ def _sanitize_payload(parsed):
     if not isinstance(parsed, dict):
         return parsed
 
-    sanitized = remap_keys(parsed, _TOP_LEVEL_KEYS, _TOP_LEVEL_ALIASES)
+    sanitized = remap_keys(
+        parsed,
+        _TOP_LEVEL_KEYS,
+        _TOP_LEVEL_ALIASES,
+    )
 
     raw_image = sanitized.get("image")
     image_width = None
@@ -198,6 +217,7 @@ def _sanitize_payload(parsed):
         if section_id not in section_ids:
             element["sectionId"] = None
 
+    # Sanitize extracted colors.
     raw_colors = sanitized.get("colors")
 
     sanitized["colors"] = (
@@ -207,6 +227,29 @@ def _sanitize_payload(parsed):
             if (cleaned := _sanitize_color(color)) is not None
         ]
         if isinstance(raw_colors, list)
+        else []
+    )
+
+    # Contrast pairs may only reference elements that survived validation.
+    valid_element_ids = {
+        element["id"]
+        for element in sanitized["elements"]
+    }
+
+    raw_contrast_pairs = sanitized.get("contrastPairs")
+
+    sanitized["contrastPairs"] = (
+        [
+            cleaned
+            for pair in raw_contrast_pairs
+            if (
+                cleaned := _sanitize_contrast_pair(
+                    pair,
+                    valid_element_ids,
+                )
+            ) is not None
+        ]
+        if isinstance(raw_contrast_pairs, list)
         else []
     )
 
@@ -326,14 +369,17 @@ def _sanitize_element(
                 font_size = None
 
     role = el.get("role")
+
     if not isinstance(role, str) or not role.strip():
         role = None
 
     section_id = el.get("sectionId")
+
     if not isinstance(section_id, str) or not section_id.strip():
         section_id = None
 
     group_id = el.get("groupId")
+
     if not isinstance(group_id, str) or not group_id.strip():
         group_id = None
 
@@ -439,4 +485,34 @@ def _sanitize_color(c):
     return {
         "hex": value,
         "role": c.get("role") if isinstance(c.get("role"), str) else None,
+    }
+
+
+def _sanitize_contrast_pair(pair, valid_element_ids):
+    """
+    Sanitize one foreground/background pair.
+
+    A pair is retained only when both colors are valid hex values
+    and its element ID references an element that survived validation.
+    """
+    if not isinstance(pair, dict):
+        return None
+
+    pair = remap_keys(pair, _CONTRAST_PAIR_KEYS)
+
+    element_id = pair.get("elementId")
+
+    if not isinstance(element_id, str) or element_id not in valid_element_ids:
+        return None
+
+    foreground = _sanitize_color({"hex": pair.get("foregroundColor")})
+    background = _sanitize_color({"hex": pair.get("backgroundColor")})
+
+    if foreground is None or background is None:
+        return None
+
+    return {
+        "elementId": element_id,
+        "foregroundColor": foreground["hex"].lower(),
+        "backgroundColor": background["hex"].lower(),
     }

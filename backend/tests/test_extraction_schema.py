@@ -140,3 +140,51 @@ def test_invalid_bounding_box_is_rejected():
                 }
             ]
         )
+
+def test_old_extraction_payload_has_empty_contrast_pairs():
+    result = make_extraction()
+
+    assert result.contrastPairs == []
+
+
+def test_extraction_accepts_explicit_contrast_pairs():
+    result = make_extraction(
+        elements=[
+            {
+                "id": "heading-1",
+                "type": "heading",
+                "boundingBox": {
+                    "x": 20,
+                    "y": 30,
+                    "width": 300,
+                    "height": 40,
+                },
+            }
+        ],
+        contrastPairs=[
+            {
+                "elementId": "heading-1",
+                "foregroundColor": "#333333",
+                "backgroundColor": "#FFFFFF",
+            }
+        ],
+    )
+
+    assert len(result.contrastPairs) == 1
+
+    pair = result.contrastPairs[0]
+    assert pair.elementId == "heading-1"
+    assert pair.foregroundColor == "#333333"
+    assert pair.backgroundColor == "#FFFFFF"
+
+
+def test_contrast_pair_requires_all_fields():
+    with pytest.raises(ValidationError):
+        make_extraction(
+            contrastPairs=[
+                {
+                    "elementId": "heading-1",
+                    "foregroundColor": "#333333",
+                }
+            ]
+        )

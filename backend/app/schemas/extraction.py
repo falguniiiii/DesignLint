@@ -163,6 +163,17 @@ class DominantColor(BaseModel):
 
     role: Optional[str] = None
 
+class ContrastPair(BaseModel):
+    """
+    Explicit foreground/background color relationship for one UI element.
+
+    Only pairs confidently identified during visual extraction should
+    be included. Contrast evaluation remains the responsibility of
+    the deterministic rule engine.
+    """
+    elementId: str
+    foregroundColor: str
+    backgroundColor: str
 
 class ImageMeta(BaseModel):
     width: int = Field(gt=0)
@@ -177,3 +188,4 @@ class ExtractionResult(BaseModel):
     elements: list[UIElement] = Field(default_factory=list)
     colors: list[DominantColor] = Field(default_factory=list)
     sections: list[Section] = Field(default_factory=list)
+    contrastPairs: list[ContrastPair] = Field(default_factory=list)

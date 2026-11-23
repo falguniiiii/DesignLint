@@ -5,12 +5,14 @@ as raw text.
 
 It must NEVER ask Gemini to judge, critique, or score the design.
 The prompt below is deliberately restricted to observable facts.
-Judgment happens later, in the rule engine (Phase 3), on our own code.
+Judgment happens later, in the rule engine, on our own code.
 """
+
 from google import genai
 from google.genai import types
 
 from app.config.settings import settings
+
 
 EXTRACTION_PROMPT = """You are a visual perception system. Analyze the supplied UI screenshot and report ONLY objectively observable visual information.
 
@@ -35,8 +37,7 @@ Extract the following information:
     product_image, decorative_image, form_control, other.
   - sectionId: the id of the section containing the element, if identifiable.
   - groupId: a shared identifier for elements that clearly belong to the same repeated component group. Use null when no clear repeated group exists.
-
-Do not infer semantic roles from visual styling alone when the role is unclear. Use "other" rather than guessing.
+- Do not infer semantic roles from visual styling alone when the role is unclear. Use "other" rather than guessing.
 
 3. SECTIONS
 - Identify visually distinct, meaningful page regions.
@@ -56,6 +57,26 @@ Do not infer semantic roles from visual styling alone when the role is unclear. 
 - Identify up to 6 dominant colors actually visible in the interface.
 - Report each as a hex color code and an observable color role when identifiable.
 
+5. CONTRAST PAIRS
+- Identify actual foreground/background color pairs for visible text elements.
+- Each pair must reference the id of an existing element in the returned elements array through elementId.
+- foregroundColor is the visible text color.
+- backgroundColor is the actual visible background directly behind that text.
+- Report colors as hex color codes in the #RRGGBB format.
+- Associate text with the background it is actually rendered against, not merely the nearest section, card, or page background.
+- For text inside a button, input, badge, or card, identify the surface directly behind the text.
+- If the background is transparent, identify the nearest underlying opaque surface only when it can be determined confidently.
+- Do not assume that a dominant color is the background of a particular text element.
+- Do not pair every text color with every background color.
+- Do not invent pairs based on common design conventions or expected website styling.
+- Do not report a pair when the foreground or background color cannot be identified with reasonable visual confidence.
+- Omit ambiguous pairs, including text over gradients, photographs, complex images, or visibly varying backgrounds when a single representative background color cannot be established.
+- Multiple text elements may reference the same foreground/background colors when they genuinely share the same styling and surface.
+- Do not calculate contrast ratios.
+- Do not apply WCAG thresholds.
+- Do not classify any pair as passing or failing.
+- Do not make accessibility judgments or recommendations.
+
 BOUNDING BOX RULES
 - Use pixel coordinates relative to the top-left corner of the screenshot.
 - Report x and y as the top-left position.
@@ -67,12 +88,11 @@ RESPONSE REQUIREMENTS
 - Return ONLY valid JSON.
 - Use the exact field names and structure shown below.
 - Use null for unavailable optional values.
-- Use empty arrays when no sections, elements, or colors can be identified.
+- Use empty arrays when no sections, elements, colors, or contrast pairs can be identified.
 - Do not include markdown, code fences, explanations, or additional fields.
 - Include only information that can be observed in the screenshot.
 
 JSON STRUCTURE:
-
 {
   "image": {
     "width": 1440,
@@ -113,10 +133,17 @@ JSON STRUCTURE:
       "hex": "#123456",
       "role": "primary"
     }
+  ],
+  "contrastPairs": [
+    {
+      "elementId": "element-1",
+      "foregroundColor": "#123456",
+      "backgroundColor": "#FFFFFF"
+    }
   ]
 }
 
-The values above are illustrative examples of the JSON structure, not elements or colors to copy. Extract the actual screenshot content only."""
+The values above are illustrative examples of the JSON structure, not elements, colors, or contrast pairs to copy. Extract the actual screenshot content only."""
 
 
 class GeminiExtractionError(Exception):

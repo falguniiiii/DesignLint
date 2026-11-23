@@ -407,9 +407,9 @@ def _find_accessible_text_color(text_hex: str, background_hex: str, target_ratio
 
 
 def _contrast_recommendation(finding: RawFinding) -> Recommendation:
-    # Parse back out of the id, formatted as CONTRAST-<TEXTHEX>-<BGHEX>
-    # (uppercase hex, no '#') by contrast_rules.py.
-    _, text_hex_part, bg_hex_part = finding.id.split("-")
+    # Parse foreground and background colors from the end of the ID.
+    # The element ID may itself contain hyphens.
+    _, text_hex_part, bg_hex_part = finding.id.rsplit("-", 2)
     text_hex = f"#{text_hex_part.lower()}"
     background_hex = f"#{bg_hex_part.lower()}"
 

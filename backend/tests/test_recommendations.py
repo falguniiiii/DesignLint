@@ -312,6 +312,22 @@ def test_contrast_recommendation_suggests_a_more_accessible_color_and_states_new
     assert ":1" in suggested  # states the new contrast ratio achieved
 
 
+def test_contrast_recommendation_handles_hyphens_in_element_id():
+    """The element ID can contain hyphens; the final two ID segments are the colors."""
+    finding = _raw(
+        "CONTRAST-text-block-17-B8B8B8-FFFFFF",
+        "Color",
+        relatedElements=["text-block-17"],
+    )
+
+    enriched = enrich_findings([finding], _extraction())
+
+    recommendation = enriched[0].recommendation
+    assert "#b8b8b8" in recommendation.fix.lower()
+    assert "#ffffff" in recommendation.suggestedValue.lower()
+    assert ":1" in recommendation.suggestedValue
+
+
 def test_contrast_recommendation_suggested_color_actually_passes_wcag_aa():
     from app.services.color_utils import contrast_ratio
     from app.services.recommendations import _find_accessible_text_color
